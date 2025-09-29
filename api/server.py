@@ -46,7 +46,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Missing credentials")
                 return
             hashed_password = hashlib.md5(password.encode()).hexdigest()
-            with open('api/data/users.json', 'r') as file:
+            with open('data/users.json', 'r') as file:
                 users = json.load(file)
             for user in users:
                 if user.get("username") == username and user.get("password") == hashed_password:
