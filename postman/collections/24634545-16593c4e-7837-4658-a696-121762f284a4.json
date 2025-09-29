@@ -62,7 +62,7 @@
 								"id": "bc9c4a62-bbf2-4862-9c38-0d820c93ed18",
 								"exec": [
 									"pm.test(\"Status code is 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
-									"pm.environment.set(\"authToken\", pm.response.json().session_token);"
+									"pm.globals.set(\"authToken\", pm.response.json().session_token);"
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -275,6 +275,18 @@
 								"profile"
 							]
 						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"id": "24634545-fa6974cb-4463-4d60-ae85-c2d45b61821d",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": []
 					},
 					"response": []
 				}
@@ -895,6 +907,40 @@
 			"item": [
 				{
 					"name": "Create Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d15dc49e-97f6-4818-a1e8-0501b32e36e2",
+								"exec": [
+									"// Check that status code is 201 Created\r",
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that response contains expected fields\r",
+									"pm.test(\"Response has reservation data\", function () {\r",
+									"    pm.expect(responseJson).to.have.property(\"reservation\");\r",
+									"    pm.expect(responseJson.reservation).to.have.property(\"id\");\r",
+									"    pm.expect(responseJson.reservation).to.have.property(\"licenseplate\", pm.request.body.raw.includes(\"licenseplate\") ? JSON.parse(pm.request.body.raw).licenseplate : undefined);\r",
+									"});\r",
+									"\r",
+									"// Save reservation id for later requests\r",
+									"pm.environment.set(\"reservationId\", responseJson.reservation.id);\r",
+									"\r",
+									"// Optional: Log response to console\r",
+									"console.log(\"Created reservation:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"id": "24634545-c8df7510-88b7-4cd2-b7c1-4d803bbe2aaa",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -929,6 +975,40 @@
 				},
 				{
 					"name": "Get Reservation by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "788874d6-0c4a-4537-887f-c1c7be9c7eb9",
+								"exec": [
+									"// Check that status code is 200 OK\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that the response has the expected reservation data\r",
+									"pm.test(\"Response has correct reservation fields\", function () {\r",
+									"    pm.expect(responseJson).to.have.property(\"id\", pm.environment.get(\"reservationId\"));\r",
+									"    pm.expect(responseJson).to.have.property(\"licenseplate\");\r",
+									"    pm.expect(responseJson).to.have.property(\"startdate\");\r",
+									"    pm.expect(responseJson).to.have.property(\"enddate\");\r",
+									"    pm.expect(responseJson).to.have.property(\"parkinglot\");\r",
+									"    pm.expect(responseJson).to.have.property(\"user\");\r",
+									"});\r",
+									"\r",
+									"// Optional: Log response to console\r",
+									"console.log(\"Fetched reservation:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"id": "24634545-6da78a0f-5fdd-495e-8ed2-a06cb32c5876",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -939,6 +1019,11 @@
 							{
 								"key": "Authorization",
 								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
 							}
 						],
 						"url": {
@@ -956,6 +1041,50 @@
 				},
 				{
 					"name": "Get Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "17242eb6-6792-4ed1-97a8-0020ddb232fe",
+								"exec": [
+									"// Check that status code is 200 OK\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that the response contains reservations\r",
+									"pm.test(\"Response is an object with reservations\", function () {\r",
+									"    pm.expect(responseJson).to.be.an(\"object\");\r",
+									"\r",
+									"    // Optionally, check that at least one reservation exists\r",
+									"    const reservationIds = Object.keys(responseJson);\r",
+									"    pm.expect(reservationIds.length).to.be.greaterThan(0);\r",
+									"\r",
+									"    // Check that each reservation has the required fields\r",
+									"    reservationIds.forEach(function(rid) {\r",
+									"        const res = responseJson[rid];\r",
+									"        pm.expect(res).to.have.property(\"id\");\r",
+									"        pm.expect(res).to.have.property(\"licenseplate\");\r",
+									"        pm.expect(res).to.have.property(\"startdate\");\r",
+									"        pm.expect(res).to.have.property(\"enddate\");\r",
+									"        pm.expect(res).to.have.property(\"parkinglot\");\r",
+									"        pm.expect(res).to.have.property(\"user\");\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"// Optional: Log reservations to console\r",
+									"console.log(\"All reservations:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"id": "24634545-5ef39202-9011-4d17-9e6c-6f30faa3cdc8",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -966,6 +1095,11 @@
 							{
 								"key": "Authorization",
 								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
 							}
 						],
 						"url": {
@@ -982,6 +1116,38 @@
 				},
 				{
 					"name": "Delete Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "77e220f0-7571-4a91-aaba-d2e565e6a696",
+								"exec": [
+									"// Check that status code is 200 OK\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that response confirms deletion\r",
+									"pm.test(\"Reservation deleted successfully\", function () {\r",
+									"    pm.expect(responseJson).to.have.property(\"status\", \"Deleted\");\r",
+									"});\r",
+									"\r",
+									"// Optional: Remove the reservationId from environment\r",
+									"pm.environment.unset(\"reservationId\");\r",
+									"\r",
+									"// Log response for debugging\r",
+									"console.log(\"Deleted reservation response:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"id": "24634545-d50938cb-eca5-4aab-9ba0-a5453f2a8310",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -992,6 +1158,11 @@
 							{
 								"key": "Authorization",
 								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
 							}
 						],
 						"url": {
@@ -1339,14 +1510,14 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains at least one parking lot\", function () {",
+									"pm.test(\"Response contains at least one payment\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
 									"});",
 									"",
 									"// Save first parking lot ID for later use",
-									"var firstLotId = Object.keys(pm.response.json())[0];",
-									"pm.environment.set(\"firstParkingLotId\", firstLotId);"
+									"var UserPaymentData = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"UserPaymentData\", UserPaymentData);"
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -1405,14 +1576,14 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains at least one parking lot\", function () {",
+									"pm.test(\"Response contains at least one payment\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
 									"});",
 									"",
 									"// Save first parking lot ID for later use",
-									"var firstLotId = Object.keys(pm.response.json())[0];",
-									"pm.environment.set(\"firstParkingLotId\", firstLotId);"
+									"var GetAllUserPaymentData = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"GetAllUserPaymentData\", GetAllUserPaymentData);"
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -1457,9 +1628,16 @@
 									"    pm.response.to.have.status(201);",
 									"});",
 									"",
-									"pm.test(\"Response contains 'Parking lot saved'\", function () {",
-									"    pm.expect(pm.response.text()).to.include(\"Parking lot saved\");",
-									"});"
+									"pm.test(\"Response status is Success\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"Success\");",
+									"});",
+									"",
+									"pm.test(\"Payment field exists\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property(\"payment\");",
+									"});",
+									""
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -1512,8 +1690,8 @@
 									"    pm.response.to.have.status(201);",
 									"});",
 									"",
-									"pm.test(\"Response contains 'Parking lot saved'\", function () {",
-									"    pm.expect(pm.response.text()).to.include(\"Parking lot saved\");",
+									"pm.test(\"Response contains 'Invoice Posted'\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Invoice Posted\");",
 									"});"
 								],
 								"type": "text/javascript",
@@ -1574,14 +1752,14 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains at least one parking lot\", function () {",
+									"pm.test(\"Response contains at least one bill\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
 									"});",
 									"",
 									"// Save first parking lot ID for later use",
-									"var firstLotId = Object.keys(pm.response.json())[0];",
-									"pm.environment.set(\"firstParkingLotId\", firstLotId);"
+									"var GetUserBilling = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"GetUserBilling\", GetUserBilling);"
 								],
 								"type": "text/javascript",
 								"packages": {},
@@ -1625,14 +1803,14 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains at least one parking lot\", function () {",
+									"pm.test(\"Response contains at least one bill\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
 									"});",
 									"",
 									"// Save first parking lot ID for later use",
-									"var firstLotId = Object.keys(pm.response.json())[0];",
-									"pm.environment.set(\"firstParkingLotId\", firstLotId);"
+									"var GetAllUserBilling = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"GetAllUserBilling\", GetAllUserBilling);"
 								],
 								"type": "text/javascript",
 								"packages": {},
