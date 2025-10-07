@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from storage_utils import load_json, save_data, load_parking_lot_data, save_parking_lot_data
 from session_manager import get_session
@@ -10,8 +10,9 @@ from models.parking_models import (
 
 class ParkingService:
     @staticmethod
-    def validate_session_token(token: str) -> Dict[str, Any]:
+    def validate_session_token(token: Optional[str]) -> Dict[str, Any]:
         """Validate session token and return user data"""
+        print(f"DEBUG: Received token: '{token}' (type: {type(token)})")  # Debug line
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -19,6 +20,7 @@ class ParkingService:
             )
         
         session_user = get_session(token)
+        print(f"DEBUG: Session lookup result: {session_user}")  # Debug line
         if not session_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -37,7 +39,7 @@ class ParkingService:
             )
     
     @staticmethod
-    def start_parking_session(lot_id: str, session_data: SessionStart, token: str) -> SessionResponse:
+    def start_parking_session(lot_id: str, session_data: SessionStart, token: Optional[str]) -> SessionResponse:
         """Start a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
@@ -79,7 +81,7 @@ class ParkingService:
         )
     
     @staticmethod
-    def stop_parking_session(lot_id: str, session_data: SessionStop, token: str) -> SessionResponse:
+    def stop_parking_session(lot_id: str, session_data: SessionStop, token: Optional[str]) -> SessionResponse:
         """Stop a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
@@ -115,7 +117,7 @@ class ParkingService:
         )
     
     @staticmethod
-    def create_parking_lot(parking_lot_data: ParkingLotCreate, token: str) -> ParkingLotResponse:
+    def create_parking_lot(parking_lot_data: ParkingLotCreate, token: Optional[str]) -> ParkingLotResponse:
         """Create a new parking lot (Admin only)"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)

@@ -1,4 +1,5 @@
-from fastapi import FastAPI, status, Header
+from fastapi import FastAPI, status, Header, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, Optional
 import uvicorn
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
@@ -7,6 +8,13 @@ from services.user_service import UserService
 from services.parking_service import ParkingService
 
 app = FastAPI(title="MobyPark API", description="Parking management system API", version="1.0.0")
+security = HTTPBearer(auto_error=False)  
+
+def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[str]:
+    """Extract token from Authorization header"""
+    if credentials:
+        return credentials.credentials
+    return None
 
 @app.get("/")
 async def read_root():
@@ -26,36 +34,37 @@ async def login_user(credentials: UserLogin):
 async def start_parking_session(
     lot_id: str,
     session_data: SessionStart,
-    authorization: Annotated[Optional[str], Header()] = None
+    token: Optional[str] = Depends(get_token)
 ):
     """Start a parking session for a vehicle in the specified parking lot
     
-    Requires Authorization header with session token.
+    Requires Bearer token in Authorization header.
     """
-    return ParkingService.start_parking_session(lot_id, session_data, authorization)
+    print(f"DEBUG: FastAPI received token: '{token}' (type: {type(token)})")  # Debug line
+    return ParkingService.start_parking_session(lot_id, session_data, token)
 
 @app.post("/parking-lots/{lot_id}/sessions/stop", response_model=SessionResponse)
 async def stop_parking_session(
     lot_id: str,
     session_data: SessionStop,
-    authorization: Annotated[Optional[str], Header()] = None
+    token: Optional[str] = Depends(get_token)
 ):
     """Stop a parking session for a vehicle in the specified parking lot
     
-    Requires Authorization header with session token.
+    Requires Bearer token in Authorization header.
     """
-    return ParkingService.stop_parking_session(lot_id, session_data, authorization)
+    return ParkingService.stop_parking_session(lot_id, session_data, token)
 
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED)
 async def create_parking_lot(
     parking_lot_data: ParkingLotCreate,
-    authorization: Annotated[Optional[str], Header()] = None
+    token: Optional[str] = Depends(get_token)
 ):
     """Create a new parking lot (Admin only)
     
-    Requires Authorization header with admin session token.
+    Requires Bearer token in Authorization header with admin privileges.
     """
-    return ParkingService.create_parking_lot(parking_lot_data, authorization)
+    return ParkingService.create_parking_lot(parking_lot_data, token)
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)
