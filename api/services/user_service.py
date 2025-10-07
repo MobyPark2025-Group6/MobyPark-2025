@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 from typing import Optional
+from datetime import datetime
 from fastapi import HTTPException, status
 from storage_utils import load_json, save_user_data
 from session_manager import add_session
@@ -34,11 +35,21 @@ class UserService:
         # Load existing users
         users = load_json('data/users.json')
         
-        # Create new user
+        # Generate new user ID
+        new_id = str(len(users) + 1)
+        
+        # Create new user with extended fields
         new_user = {
+            'id': new_id,
             'username': user_data.username,
             'password': hashed_password,
-            'name': user_data.name
+            'name': user_data.name,
+            'email': user_data.email,
+            'phone': user_data.phone,
+            'role': 'USER',
+            'created_at': datetime.now().strftime("%Y-%m-%d"),
+            'birth_year': user_data.birth_year,
+            'active': True
         }
         
         # Add to users list and save
@@ -90,7 +101,14 @@ class UserService:
             if user.get("username") == username:
                 # Return user without password for security
                 return {
+                    'id': user.get('id'),
                     'username': user.get('username'),
-                    'name': user.get('name')
+                    'name': user.get('name'),
+                    'email': user.get('email'),
+                    'phone': user.get('phone'),
+                    'role': user.get('role', 'USER'),
+                    'created_at': user.get('created_at'),
+                    'birth_year': user.get('birth_year'),
+                    'active': user.get('active', True)
                 }
         return None
