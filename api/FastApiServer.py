@@ -64,20 +64,29 @@ async def get_vehicle_id_reservations(
     authorization: Annotated[Optional[str], Header()] = None
     
 ):
-    return VehicleService.GetVehicleReservationUser(vehicle_id,authorization)
+    """
+    Acquire all reservations for a vehicle ID (currently none functional)
+    """
+    return VehicleService.get_vehicle_reservations(authorization, vehicle_id)
 
 @app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse)
 async def get_vehicle_id_history(
     vehicle_id : str,
     authorization: Annotated[Optional[str], Header()] = None
 ):
-    return None 
+    """
+    Acquire all history for a vehicle by ID (currently none functional)
+    """
+    return  VehicleService.get_vehicle_history(authorization, vehicle_id) 
 
 @app.get("/vehicles/{user_name}", response_model=SessionResponse)
 async def get_vehicles(
     user_name : str,
     authorization: Annotated[Optional[str], Header()] = None
 ):
+    """
+    Acquire all vehicles from a user as an admin
+    """
     return VehicleService.get_all_vehicles_admin_user (authorization, user_name)
 
 @app.get("/vehicles", response_model=SessionResponse)
@@ -85,6 +94,9 @@ async def get_vehicles(
 
     authorization: Annotated[Optional[str], Header()] = None
 ):
+    """
+    Acquire all vehicles from the user
+    """
     return VehicleService.get_all_vehicles(authorization)
 
 if __name__ == "__main__":
