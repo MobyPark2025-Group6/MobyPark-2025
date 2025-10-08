@@ -5,6 +5,7 @@ from models.user_models import UserRegister, UserLogin, LoginResponse, MessageRe
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from services.user_service import UserService
 from services.parking_service import ParkingService
+from services.vehicle_service import VehicleService
 
 app = FastAPI(title="MobyPark API", description="Parking management system API", version="1.0.0")
 
@@ -56,6 +57,35 @@ async def create_parking_lot(
     Requires Authorization header with admin session token.
     """
     return ParkingService.create_parking_lot(parking_lot_data, authorization)
+
+@app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
+async def get_vehicle_id_reservations(
+    vehicle_id : str,
+    authorization: Annotated[Optional[str], Header()] = None
+    
+):
+    return VehicleService.GetVehicleReservationUser(vehicle_id,authorization)
+
+@app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse)
+async def get_vehicle_id_history(
+    vehicle_id : str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    return None 
+
+@app.get("/vehicles/{user_name}", response_model=SessionResponse)
+async def get_vehicles(
+    user_name : str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    return VehicleService.get_all_vehicles_admin_user (authorization, user_name)
+
+@app.get("/vehicles", response_model=SessionResponse)
+async def get_vehicles(
+
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    return VehicleService.get_all_vehicles(authorization)
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)
