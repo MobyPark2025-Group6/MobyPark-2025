@@ -118,154 +118,64 @@ async def stop_parking_session(
     return ParkingService.stop_parking_session(lot_id, session_data, token)
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])
-
-
 async def list_parking_lots(
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
-
-
     """List all parking lots.
 
-
-    
-
-
     Requires Authorization header with valid session token.
-
-
     """
-
-
     return ParkingService.list_parking_lots(authorization)
 
-
 @app.get("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
-
-
 async def get_parking_lot(
-
-
     lot_id: str,
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
-
-
     """Retrieve a specific parking lot by ID.
-
-
-    
-
 
     Requires Authorization header with valid session token.
 
-
     """
-
-
     return ParkingService.get_parking_lot(lot_id, authorization)
 
-
 @app.get("/parking-lots/{lot_id}/sessions", response_model=list[SessionResponse])
-
-
 async def list_parking_sessions(
-
-
     lot_id: str,
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
-
-
     """List all sessions in a parking lot.
 
-
-    
-
-
     Requires Authorization header with session token.
-
-
+    
     Admins see all sessions; users see only their own.
-
-
     """
-
-
     return ParkingService.list_parking_sessions(lot_id, authorization)
 
-
 @app.get("/parking-lots/{lot_id}/sessions/{session_id}", response_model=SessionResponse)
-
-
 async def get_parking_session(
-
-
     lot_id: str,
-
-
     session_id: str,
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
-
-
     """Get details of a specific parking session.
 
-
-    
-
-
     Requires Authorization header with session token.
-
 
     Only Admins or the session owner can access.
 
-
     """
-
-
     return ParkingService.get_parking_session(lot_id, session_id, authorization)
 
 @app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
-
-
 async def delete_parking_lot(
-
-
     lot_id: str,
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
-
-
     """Delete a parking lot (Admin only)."""
-
-
     return ParkingService.delete_parking_lot(lot_id, authorization)
 
-
 @app.delete("/parking-lots/{lot_id}/sessions/{session_id}", status_code=status.HTTP_200_OK)
-
-
 async def delete_parking_session(
 
 
