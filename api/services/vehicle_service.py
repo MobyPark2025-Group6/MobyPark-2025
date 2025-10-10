@@ -81,6 +81,7 @@ class VehicleService:
     def ActOnVehicle(token : str, data : dict) :
         session_user = ValidationService.validate_session_token(token)
         ValidationService.check_for_parameters(data)
+        
         lid = data["license_plate"].replace("-", "")
         vehicles = load_json("data/vehicles.json")
         if not "parkinglot" in data :
