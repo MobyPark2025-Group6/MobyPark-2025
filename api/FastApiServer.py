@@ -98,6 +98,61 @@ async def get_vehicles(
     Acquire all vehicles from the user
     """
     return VehicleService.get_all_vehicles(authorization)
+@app.put("/vehicles/{vid}")
+async def change_vehicle(
+    vid: str,
+    license_plate: str,
+    name: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Change/update a vehicle's information
+    
+    Args:
+        vid: Vehicle ID to update
+        license_plate: Vehicle license plate
+        name: Vehicle name/description
+        authorization: Session token for authentication
+    """
+    return VehicleService.ChangeVehicle(authorization, vid, license_plate, name)
+
+@app.post("/vehicles")
+async def create_vehicle(
+    vehicle_data: dict,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Create a new vehicle
+    
+    Args:
+        vehicle_data: Dictionary containing vehicle information (name, license_plate)
+        authorization: Session token for authentication
+    """
+    return VehicleService.CreateVehicle(authorization, vehicle_data)
+
+@app.post("/vehicles/{vid}/entry")
+async def act_on_vehicle(
+    vid: str,
+    request: dict,
+    authorization: str = Header(None, alias="Authorization")
+):
+    """Act on a vehicle (e.g., parking lot entry)"""
+    return VehicleService.ActOnVehicle(authorization, vid, request)
+
+@app.delete("/vehicles/{vid}")
+async def delete_vehicle(
+    vid: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Delete a vehicle
+    
+    Args:
+        vid: Vehicle ID to delete
+        authorization: Session token for authentication
+    """
+    return VehicleService.DeleteVehicle(authorization, vid)
+
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])
 async def list_parking_lots(

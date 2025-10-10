@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from storage_utils import load_json, save_data, load_parking_lot_data, save_parking_lot_data
 from session_manager import get_session

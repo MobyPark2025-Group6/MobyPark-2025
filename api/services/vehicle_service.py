@@ -1,11 +1,11 @@
 from fastapi import HTTPException, status
 import json
 from datetime import datetime
-from api.models.user_models import User
-from api.storage_utils import load_json
-from validation_service import ValidationService
+from models.user_models import User
+from storage_utils import load_json
+from services.validation_service import ValidationService
 from storage_utils import load_vehicle_data,save_data
-from user_service import UserService
+from services.user_service import UserService
 class VehicleService:
     @staticmethod
     def checkForVehicle(session_user : User , Vid : str):
