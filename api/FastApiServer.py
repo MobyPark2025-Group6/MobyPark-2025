@@ -1,62 +1,322 @@
-from fastapi import FastAPI, status, Header
+from fastapi import FastAPI, status, Header, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, Optional
 import uvicorn
-from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
+from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.vehicle_service import VehicleService
 
-app = FastAPI(title="MobyPark API", description="Parking management system API", version="1.0.0")
+# Define tags for API organization
+tags_metadata = [
+    {
+        "name": "Authentication",
+        "description": "User registration, login and authentication operations",
+    },
+    {
+        "name": "Users",
+        "description": "User management and profile operations",
+    },
+    {
+        "name": "Parking Lots",
+        "description": "Parking lot management and session operations",
+    },
+    {
+        "name": "Payments",
+        "description": "Payment processing and transaction operations",
+    },
+    {
+        "name": "Vehicles",
+        "description": "Vehicle registration and management operations",
+    },
+    {
+        "name": "Reservations",
+        "description": "Parking space reservation and booking operations",
+    },
+]
 
-@app.get("/")
+app = FastAPI(
+    title="MobyPark API", 
+    description="Comprehensive parking management system API with user authentication, parking lot management, payments, and reservations",
+    version="1.0.0",
+    openapi_tags=tags_metadata
+)
+security = HTTPBearer(auto_error=False)  
+
+def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[str]:
+    """Extract token from Authorization header"""
+    if credentials:
+        return credentials.credentials
+    return None
+
+@app.get("/", tags=["General"])
 async def read_root():
-    return {"message": "Welcome to MobyPark API!"}
+    """Welcome endpoint with API information"""
+    return {"message": "Welcome to MobyPark API!", "version": "1.0.0", "docs": "/docs"}
 
-@app.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+# Authentication Endpoints
+@app.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
 async def register_user(user_data: UserRegister):
-    """Register a new user account"""
+    """Register a new user account with optional extended information"""
     return UserService.create_user(user_data)
 
-@app.post("/login", response_model=LoginResponse)
+@app.post("/login", response_model=LoginResponse, tags=["Authentication"])
 async def login_user(credentials: UserLogin):
-    """Authenticate user and create session"""
+    """Authenticate user credentials and create a session token"""
     return UserService.authenticate_user(credentials)
 
-@app.post("/parking-lots/{lot_id}/sessions/start", response_model=SessionResponse)
-async def start_parking_session(
-    lot_id: str,
-    session_data: SessionStart,
-    authorization: Annotated[Optional[str], Header()] = None
-):
-    """Start a parking session for a vehicle in the specified parking lot
-    
-    Requires Authorization header with session token.
-    """
-    return ParkingService.start_parking_session(lot_id, session_data, authorization)
+# User Management Endpoints
+@app.get("/users/{username}", response_model=User, tags=["Users"])
+async def get_user_profile(username: str):
+    """Get detailed user profile information by username"""
+    user = UserService.get_user_by_username(username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
 
-@app.post("/parking-lots/{lot_id}/sessions/stop", response_model=SessionResponse)
-async def stop_parking_session(
-    lot_id: str,
-    session_data: SessionStop,
-    authorization: Annotated[Optional[str], Header()] = None
-):
-    """Stop a parking session for a vehicle in the specified parking lot
-    
-    Requires Authorization header with session token.
-    """
-    return ParkingService.stop_parking_session(lot_id, session_data, authorization)
-
-@app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED)
+# Parking Lot Management Endpoints
+@app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])
 async def create_parking_lot(
     parking_lot_data: ParkingLotCreate,
-    authorization: Annotated[Optional[str], Header()] = None
+    token: Optional[str] = Depends(get_token)
 ):
     """Create a new parking lot (Admin only)
     
-    Requires Authorization header with admin session token.
+    Requires Bearer token in Authorization header with admin privileges.
+    Only users with ADMIN role can create new parking lots.
     """
-    return ParkingService.create_parking_lot(parking_lot_data, authorization)
+    return ParkingService.create_parking_lot(parking_lot_data, token)
+
+@app.post("/parking-lots/{lot_id}/sessions/start", response_model=SessionResponse, tags=["Parking Lots"])
+async def start_parking_session(
+    lot_id: str,
+    session_data: SessionStart,
+    token: Optional[str] = Depends(get_token)
+):
+    """Start a parking session for a vehicle in the specified parking lot
+    
+    Requires Bearer token in Authorization header.
+    Creates a new parking session with start time and links it to the authenticated user.
+    """
+    print(f"DEBUG: FastAPI received token: '{token}' (type: {type(token)})")  # Debug line
+    return ParkingService.start_parking_session(lot_id, session_data, token)
+
+@app.post("/parking-lots/{lot_id}/sessions/stop", response_model=SessionResponse, tags=["Parking Lots"])
+async def stop_parking_session(
+    lot_id: str,
+    session_data: SessionStop,
+    token: Optional[str] = Depends(get_token)
+):
+    """Stop a parking session for a vehicle in the specified parking lot
+    
+    Requires Bearer token in Authorization header.
+    Ends an active parking session by setting the stop time.
+    """
+    return ParkingService.stop_parking_session(lot_id, session_data, token)
+
+@app.get("/parking-lots", response_model=list[ParkingLotResponse])
+
+
+async def list_parking_lots(
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """List all parking lots.
+
+
+    
+
+
+    Requires Authorization header with valid session token.
+
+
+    """
+
+
+    return ParkingService.list_parking_lots(authorization)
+
+
+@app.get("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
+
+
+async def get_parking_lot(
+
+
+    lot_id: str,
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """Retrieve a specific parking lot by ID.
+
+
+    
+
+
+    Requires Authorization header with valid session token.
+
+
+    """
+
+
+    return ParkingService.get_parking_lot(lot_id, authorization)
+
+
+@app.get("/parking-lots/{lot_id}/sessions", response_model=list[SessionResponse])
+
+
+async def list_parking_sessions(
+
+
+    lot_id: str,
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """List all sessions in a parking lot.
+
+
+    
+
+
+    Requires Authorization header with session token.
+
+
+    Admins see all sessions; users see only their own.
+
+
+    """
+
+
+    return ParkingService.list_parking_sessions(lot_id, authorization)
+
+
+@app.get("/parking-lots/{lot_id}/sessions/{session_id}", response_model=SessionResponse)
+
+
+async def get_parking_session(
+
+
+    lot_id: str,
+
+
+    session_id: str,
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """Get details of a specific parking session.
+
+
+    
+
+
+    Requires Authorization header with session token.
+
+
+    Only Admins or the session owner can access.
+
+
+    """
+
+
+    return ParkingService.get_parking_session(lot_id, session_id, authorization)
+
+@app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
+
+
+async def delete_parking_lot(
+
+
+    lot_id: str,
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """Delete a parking lot (Admin only)."""
+
+
+    return ParkingService.delete_parking_lot(lot_id, authorization)
+
+
+@app.delete("/parking-lots/{lot_id}/sessions/{session_id}", status_code=status.HTTP_200_OK)
+
+
+async def delete_parking_session(
+
+
+    lot_id: str,
+
+
+    session_id: str,
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """Delete a specific parking session (Admin only)."""
+
+
+    return ParkingService.delete_parking_session(lot_id, session_id, authorization)
+
+# Placeholder endpoints for future implementation
+@app.get("/payments", tags=["Payments"])
+async def get_payments():
+    """Get payment history (Coming Soon)"""
+    return {"message": "Payments endpoint - Coming Soon"}
+
+@app.post("/payments", tags=["Payments"])
+async def create_payment():
+    """Process a new payment (Coming Soon)"""
+    return {"message": "Payment processing - Coming Soon"}
+
+@app.get("/vehicles", tags=["Vehicles"])
+async def get_vehicles():
+    """Get user's registered vehicles (Coming Soon)"""
+    return {"message": "Vehicles endpoint - Coming Soon"}
+
+@app.post("/vehicles", tags=["Vehicles"])
+async def register_vehicle():
+    """Register a new vehicle (Coming Soon)"""
+    return {"message": "Vehicle registration - Coming Soon"}
+
+@app.get("/reservations", tags=["Reservations"])
+async def get_reservations():
+    """Get user's parking reservations (Coming Soon)"""
+    return {"message": "Reservations endpoint - Coming Soon"}
+
+@app.post("/reservations", tags=["Reservations"])
+async def create_reservation():
+    """Create a new parking reservation (Coming Soon)"""
+    return {"message": "Reservation creation - Coming Soon"}
 
 @app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
 async def get_vehicle_id_reservations(
