@@ -99,7 +99,6 @@ class UserService:
         users = load_json('data/users.json')
         for user in users:
             if user.get("username") == username:
-                # Return user without password for security
                 return {
                     'id': user.get('id'),
                     'username': user.get('username'),
