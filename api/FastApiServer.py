@@ -55,7 +55,6 @@ async def read_root():
     """Welcome endpoint with API information"""
     return {"message": "Welcome to MobyPark API!", "version": "1.0.0", "docs": "/docs"}
 
-# Authentication Endpoints
 @app.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
 async def register_user(user_data: UserRegister):
     """Register a new user account with optional extended information"""
@@ -66,7 +65,6 @@ async def login_user(credentials: UserLogin):
     """Authenticate user credentials and create a session token"""
     return UserService.authenticate_user(credentials)
 
-# User Management Endpoints
 @app.get("/users/{username}", response_model=User, tags=["Users"])
 async def get_user_profile(username: str):
     """Get detailed user profile information by username"""
@@ -99,17 +97,17 @@ async def get_all_users(token: Optional[str] = Depends(get_token)):
     """
     return UserService.get_all_users(token)
 
-# @app.get("/users/{username}/vehicles", response_model=List[Vehicle], tags=["Users"])
-# async def get_user_vehicles(
-#     username: str,
-#     token: Optional[str] = Depends(get_token)
-# ):
-#     """Get a list of vehicles registered to the specified user
+@app.get("/users/{username}/vehicles", response_model=List[Vehicle], tags=["Users"])
+async def get_user_vehicles(
+    username: str,
+    token: Optional[str] = Depends(get_token)
+):
+    """Get a list of vehicles registered to the specified user
     
-#     Requires Bearer token in Authorization header.
-#     Users can only access their own vehicle list unless they have ADMIN role.
-#     """
-#     return UserService.get_user_vehicles(username, token)
+    Requires Bearer token in Authorization header.
+    Users can only access their own vehicle list unless they have ADMIN role.
+    """
+    return UserService.get_user_vehicles(username, token)
 
 # Parking Lot Management Endpoints
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])
