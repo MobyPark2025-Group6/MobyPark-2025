@@ -1,0 +1,1855 @@
+{
+	"info": {
+		"_postman_id": "24634545-16593c4e-7837-4658-a696-121762f284a4",
+		"name": "Parking System API Full",
+		"description": "Full Postman collection for Parking System API endpoints (empty templates)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8dc87bea-be04-47c2-9368-86bf6e778db9",
+								"exec": [
+									"pm.test(\"Status code is 200 or 201\", function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-ade85bc8-f713-491f-91dc-f76a5616bcb7",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"xrob\",\r\n  \"password\": \"1234\",\r\n  \"name\": \"Cindy Leenders\"\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "bc9c4a62-bbf2-4862-9c38-0d820c93ed18",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+									"pm.globals.set(\"authToken\", pm.response.json().session_token);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "7edc4a8f-11a2-4559-ac03-354c11e1bc0c",
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-7d89b08e-fac4-42bf-b1b7-aee672bed225",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"cindy.leenders42\",\r\n  \"password\": \"password\"\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Profile",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "2170ca4c-251b-4c13-93fe-f7ecb990f5a5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "c331c4d0-3be4-4842-96d1-2f7852c1e2f5",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response has username\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData).to.have.property(\"username\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response has role\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData).to.have.property(\"role\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-b83540fd-9c67-40bc-8503-515999ca3b30",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "138d2034-90ba-4a87-a1c4-d2c683f5faf2",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is User logged out\", function () {\r",
+									"    pm.expect(pm.response.text()).to.eql(\"User logged out\");\r",
+									"});\r",
+									"\r",
+									"// Clear auth token after logout\r",
+									"pm.environment.set(\"authToken\", \"\");"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-2db750be-95cd-43e1-a714-988a918a0e2d",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b24ea444-f1ca-4f9e-81ee-2249c620c7cb",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is success message\", function () {\r",
+									"    pm.expect(pm.response.text()).to.eql(\"User updated succesfully\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-63c15564-f9b3-4652-8232-ae321ea7fd72",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Johnathan Doe\",\r\n  \"password\": \"newpassword123\"\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"id": "24634545-fa6974cb-4463-4d60-ae85-c2d45b61821d",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			],
+			"id": "24634545-0c2dde5e-67dc-45d1-9cc1-d41e47e1d525"
+		},
+		{
+			"name": "Parking Lots",
+			"item": [
+				{
+					"name": "Create Parking Lot",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b5dd283d-d4c9-428c-af62-6d5f632c8d98",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains 'Parking lot saved'\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"Parking lot saved\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-48b9ee0d-3f16-4385-ad73-f7f2b6890945",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Main Street Parking\",\r\n  \"location\": \"123 Main St\",\r\n  \"tariff\": 2.5,\r\n  \"daytariff\": 20,\r\n  \"capacity\": 50,\r\n  \"reserved\": 0\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Parking Lots",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c8d3614-9ec8-4c13-9cce-b6311c24e9d5",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains at least one parking lot\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);\r",
+									"});\r",
+									"\r",
+									"// Save first parking lot ID for later use\r",
+									"var firstLotId = Object.keys(pm.response.json())[0];\r",
+									"pm.environment.set(\"firstParkingLotId\", firstLotId);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-4e4a0f4e-8cd5-4d3b-b79f-633dfddff737",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Parking Lot by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d3563778-dff4-4a3e-8180-e5d39bba3957",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains parking lot name\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData).to.have.property(\"name\");\r",
+									"});\r",
+									"\r",
+									"// Save the parking lot ID for future requests\r",
+									"pm.environment.set(\"parkingLotId\", pm.response.json().id || \"1\");"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-d592479a-6b1d-4345-915c-e008a6fb2126",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Parking Lot",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "bb912aeb-c27e-4641-8986-da29cdab0ca2",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is Parking lot deleted\", function () {\r",
+									"    pm.expect(pm.response.text()).to.eql(\"Parking lot deleted\");\r",
+									"});\r",
+									"\r",
+									"// Clear the parking lot ID variable after deletion\r",
+									"pm.environment.unset(\"parkingLotId\");"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-4e13db18-2003-4d62-b891-416b21596356",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/1501",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"1501"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Parking Lot Sessions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "95b54e1f-26cf-472c-802e-3407aed34b17",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is an object of sessions\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData).to.be.an(\"object\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-cc0fed72-258f-408e-b647-976484c0c945",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Session by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "ef35807d-53f2-47c4-8b0c-6a60cb2b9fcd",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains licenseplate\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData).to.have.property(\"licenseplate\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response contains user\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData).to.have.property(\"user\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-75ff17bf-569f-44ab-98b7-5c4244182234",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions/{{sessionId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions",
+								"{{sessionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Session by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "38783b99-0c23-40dd-87e3-6bfd8bd0de46",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is Sessions deleted\", function () {\r",
+									"    pm.expect(pm.response.text()).to.eql(\"Sessions deleted\");\r",
+									"});\r",
+									"\r",
+									"// Clear session ID variable after deletion\r",
+									"pm.environment.unset(\"sessionId\");"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-11642061-e5bd-4604-b518-c77816ed28e4",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions/{{sessionId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions",
+								"{{sessionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post session start by licenseplate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "70807df9-f884-4a1a-bc5c-b8890b4b4ef3",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response confirms session started\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"Session started for:\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-0e2b219d-062f-4902-8a01-9d3b592975af",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"licenseplate\": \"ABC-123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions/start",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions",
+								"start"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post session stop by licenseplate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "5d336599-4cd3-4e0f-bf50-95b7c081d3ae",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response confirms session stopped\", function () {\r",
+									"    pm.expect(pm.response.text()).to.include(\"Session stopped for:\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-cf6b343d-995b-47a6-8354-4d4a7e56d279",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"licenseplate\": \"ABC-we\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions/stop",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions",
+								"stop"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user sessions",
+					"id": "24634545-000b2d1f-9a2e-4c66-8c91-d47a5ddbfbfa",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post admin sessions",
+					"id": "24634545-d24aedb0-2ac7-461f-a320-c0da44cebe16",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"licenseplate\": \"XYZ-987\",\r\n  \"user\": \"johndoe\",\r\n  \"started\": \"26-09-2025 09:00:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}/sessions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}",
+								"sessions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Put parking lots",
+					"id": "24634545-ea14e177-b0db-4d4a-b185-2e3dfbfd82ba",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Updated Parking Lot Name\",\r\n  \"location\": \"Updated Location\",\r\n  \"tariff\": 2.5,\r\n  \"daytariff\": 20,\r\n  \"reserved\": 0\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/parking-lots/{{parkingLotId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"parking-lots",
+								"{{parkingLotId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "24634545-b10103e8-b333-496d-9ade-82dae0c0d5db"
+		},
+		{
+			"name": "Reservations",
+			"item": [
+				{
+					"name": "Create Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d15dc49e-97f6-4818-a1e8-0501b32e36e2",
+								"exec": [
+									"// Check that status code is 201 Created\r",
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that response contains expected fields\r",
+									"pm.test(\"Response has reservation data\", function () {\r",
+									"    pm.expect(responseJson).to.have.property(\"reservation\");\r",
+									"    pm.expect(responseJson.reservation).to.have.property(\"id\");\r",
+									"    pm.expect(responseJson.reservation).to.have.property(\"licenseplate\", pm.request.body.raw.includes(\"licenseplate\") ? JSON.parse(pm.request.body.raw).licenseplate : undefined);\r",
+									"});\r",
+									"\r",
+									"// Save reservation id for later requests\r",
+									"pm.environment.set(\"reservationId\", responseJson.reservation.id);\r",
+									"\r",
+									"// Optional: Log response to console\r",
+									"console.log(\"Created reservation:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-c8df7510-88b7-4cd2-b7c1-4d803bbe2aaa",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"user\": \"johndoe\",\r\n  \"licenseplate\": \"XYZ-789\",\r\n  \"startdate\": \"22-09-2025 08:00:00\",\r\n  \"enddate\": \"22-09-2025 18:00:00\",\r\n  \"parkinglot\": \"{{parkingLotId}}\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reservations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reservations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reservation by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "788874d6-0c4a-4537-887f-c1c7be9c7eb9",
+								"exec": [
+									"// Check that status code is 200 OK\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that the response has the expected reservation data\r",
+									"pm.test(\"Response has correct reservation fields\", function () {\r",
+									"    pm.expect(responseJson).to.have.property(\"id\", pm.environment.get(\"reservationId\"));\r",
+									"    pm.expect(responseJson).to.have.property(\"licenseplate\");\r",
+									"    pm.expect(responseJson).to.have.property(\"startdate\");\r",
+									"    pm.expect(responseJson).to.have.property(\"enddate\");\r",
+									"    pm.expect(responseJson).to.have.property(\"parkinglot\");\r",
+									"    pm.expect(responseJson).to.have.property(\"user\");\r",
+									"});\r",
+									"\r",
+									"// Optional: Log response to console\r",
+									"console.log(\"Fetched reservation:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-6da78a0f-5fdd-495e-8ed2-a06cb32c5876",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reservations/{{reservationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reservations",
+								"{{reservationId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "17242eb6-6792-4ed1-97a8-0020ddb232fe",
+								"exec": [
+									"// Check that status code is 200 OK\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that the response contains reservations\r",
+									"pm.test(\"Response is an object with reservations\", function () {\r",
+									"    pm.expect(responseJson).to.be.an(\"object\");\r",
+									"\r",
+									"    // Optionally, check that at least one reservation exists\r",
+									"    const reservationIds = Object.keys(responseJson);\r",
+									"    pm.expect(reservationIds.length).to.be.greaterThan(0);\r",
+									"\r",
+									"    // Check that each reservation has the required fields\r",
+									"    reservationIds.forEach(function(rid) {\r",
+									"        const res = responseJson[rid];\r",
+									"        pm.expect(res).to.have.property(\"id\");\r",
+									"        pm.expect(res).to.have.property(\"licenseplate\");\r",
+									"        pm.expect(res).to.have.property(\"startdate\");\r",
+									"        pm.expect(res).to.have.property(\"enddate\");\r",
+									"        pm.expect(res).to.have.property(\"parkinglot\");\r",
+									"        pm.expect(res).to.have.property(\"user\");\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"// Optional: Log reservations to console\r",
+									"console.log(\"All reservations:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-5ef39202-9011-4d17-9e6c-6f30faa3cdc8",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reservations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reservations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "77e220f0-7571-4a91-aaba-d2e565e6a696",
+								"exec": [
+									"// Check that status code is 200 OK\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Parse response JSON\r",
+									"var responseJson = pm.response.json();\r",
+									"\r",
+									"// Check that response confirms deletion\r",
+									"pm.test(\"Reservation deleted successfully\", function () {\r",
+									"    pm.expect(responseJson).to.have.property(\"status\", \"Deleted\");\r",
+									"});\r",
+									"\r",
+									"// Optional: Remove the reservationId from environment\r",
+									"pm.environment.unset(\"reservationId\");\r",
+									"\r",
+									"// Log response for debugging\r",
+									"console.log(\"Deleted reservation response:\", responseJson);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-d50938cb-eca5-4aab-9ba0-a5453f2a8310",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/reservations/{{reservationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reservations",
+								"{{reservationId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Put Reservation",
+					"id": "24634545-80644a3c-1ec2-43ba-8543-57ef986085d7",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"user\": \"281\",\r\n  \"parkinglot\": \"1\",\r\n  \"start_time\": \"26-09-2025 10:00:00\",\r\n  \"end_time\": \"26-09-2025 12:00:00\",\r\n  \"vehicle\": \"XYZ-987\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reservations/{{reservationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reservations",
+								"{{reservationId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "24634545-289f34c2-e596-41f6-9e06-8bf604c952d9"
+		},
+		{
+			"name": "Vehicles",
+			"item": [
+				{
+					"name": "Create Vehicle",
+					"id": "24634545-53e811ac-55e7-4652-8707-574d03da225d",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"My Car buphiepbup\",\r\n  \"license_plate\": \"ABC-1234\"\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vehicles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vehicles",
+					"id": "24634545-1f492716-1986-4658-b2c1-4216f262d493",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vehicles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vehicles by User (Admin)",
+					"id": "24634545-d3849592-4f95-4747-9461-c666dac42260",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vehicles/:user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles",
+								":user"
+							],
+							"variable": [
+								{
+									"id": "9eb23b00-5621-4558-974f-b3bca95a12ba",
+									"key": "user"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vehicle Reservations",
+					"id": "24634545-81106dab-0b0d-4012-b1f5-c24b8545d017",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vehicles/:id/reservations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles",
+								":id",
+								"reservations"
+							],
+							"variable": [
+								{
+									"id": "77627f6f-e405-44e6-944f-69a52139ceb3",
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vehicle History",
+					"id": "24634545-2c313ab8-4f51-4a1c-9882-a67a646d5507",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vehicles/:id/history",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles",
+								":id",
+								"history"
+							],
+							"variable": [
+								{
+									"id": "812dc967-158c-4e34-9699-c5eceecee068",
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Vehicle",
+					"id": "24634545-688720fa-2b2c-4249-b331-6b0761ee9d23",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vehicles/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles",
+								":id"
+							],
+							"variable": [
+								{
+									"id": "c81b757c-3776-42f5-8964-d26287205c38",
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Put Vechicles",
+					"id": "24634545-8ab3ac4f-e8ad-44f9-9ee9-2a6b07ebe058",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Updated Vehicle Name\"\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vehicles/{{vehicleId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles",
+								"{{vehicleId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post vechicle to parking lot",
+					"id": "24634545-eb4335df-fa42-4c3c-acbf-cc65431c40fc",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"parkinglot\": \"1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vehicles/{{vehicleId}}/entry",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vehicles",
+								"{{vehicleId}}",
+								"entry"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "24634545-ceb00008-b508-48b1-aa1f-196f30bff1fd"
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Get User Payments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4eb5b0d4-f296-4838-ad96-84377464bf63",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains at least one payment\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
+									"});",
+									"",
+									"// Save first parking lot ID for later use",
+									"var UserPaymentData = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"UserPaymentData\", UserPaymentData);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-f98bb629-db0f-471d-b626-6b7f753fbf8e",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payments by User (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d2329d03-aea6-4abb-bedb-95f38e0cf697",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains at least one payment\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
+									"});",
+									"",
+									"// Save first parking lot ID for later use",
+									"var GetAllUserPaymentData = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"GetAllUserPaymentData\", GetAllUserPaymentData);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-e749020c-6621-44cb-b4b9-c6482e45f604",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/payments/{{username}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments",
+								"{{username}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post payments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "170c2fb3-3fb9-4852-b111-f95f24d4c004",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response status is Success\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"Success\");",
+									"});",
+									"",
+									"pm.test(\"Payment field exists\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property(\"payment\");",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-4dfad0b4-838d-40e2-b6f0-d49f75c21cea",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"transaction\": \"{{transactionId}}\",\r\n  \"amount\": 15.00\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/payments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"payments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post invoices",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "c0e5742b-5b6d-4395-acf7-060ea7fede94",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains 'Invoice Posted'\", function () {",
+									"    pm.expect(pm.response.text()).to.include(\"Invoice Posted\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-5128d597-a366-4c9c-a1ce-af0d4395a2ce",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"month\": \"2025-09\",\r\n  \"template\": \"standard\"\r\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/invoices/generate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"invoices",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "24634545-808adb70-5fd6-427a-99e1-2505563bcb09"
+		},
+		{
+			"name": "Billing",
+			"item": [
+				{
+					"name": "User Billing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "667ed79d-9141-4c78-b971-c168a6d5e512",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains at least one bill\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
+									"});",
+									"",
+									"// Save first parking lot ID for later use",
+									"var GetUserBilling = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"GetUserBilling\", GetUserBilling);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-62c5a395-58c9-4fbb-8640-ec3cde8c8255",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/billing",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"billing"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Billing by User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "28beaba7-88fd-400d-915b-6f41a45ce619",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains at least one bill\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(Object.keys(jsonData).length).to.be.above(0);",
+									"});",
+									"",
+									"// Save first parking lot ID for later use",
+									"var GetAllUserBilling = Object.keys(pm.response.json())[0];",
+									"pm.environment.set(\"GetAllUserBilling\", GetAllUserBilling);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "24634545-d79ea1dc-1b66-4877-9d07-5f37d0a8cdff",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/billing/:user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"billing",
+								":user"
+							],
+							"variable": [
+								{
+									"key": "user"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "24634545-57092faf-fef9-4d5d-afb9-79fbaae5206f"
+		}
+	]
+}
