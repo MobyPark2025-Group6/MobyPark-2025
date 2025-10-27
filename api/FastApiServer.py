@@ -1,6 +1,6 @@
 from fastapi import FastAPI, status, Header, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 import uvicorn
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
@@ -77,6 +77,39 @@ async def get_user_profile(username: str):
             detail="User not found"
         )
     return user
+
+@app.delete("/users/{username}", response_model=MessageResponse, tags=["Users"])
+async def delete_user_account(
+    username: str,
+    token: Optional[str] = Depends(get_token)
+):
+    """Delete a user account (Admin only)
+    
+    Requires Bearer token in Authorization header with admin privileges.
+    Only users with ADMIN role can delete user accounts.
+    """
+    return UserService.delete_user(username, token)
+
+@app.get("/users", response_model=List[User], tags=["Users"])
+async def get_all_users(token: Optional[str] = Depends(get_token)):
+    """Get a list of all users (Admin only)
+
+    Requires Bearer token in Authorization header with admin privileges.
+    Only users with ADMIN role can access this endpoint.
+    """
+    return UserService.get_all_users(token)
+
+# @app.get("/users/{username}/vehicles", response_model=List[Vehicle], tags=["Users"])
+# async def get_user_vehicles(
+#     username: str,
+#     token: Optional[str] = Depends(get_token)
+# ):
+#     """Get a list of vehicles registered to the specified user
+    
+#     Requires Bearer token in Authorization header.
+#     Users can only access their own vehicle list unless they have ADMIN role.
+#     """
+#     return UserService.get_user_vehicles(username, token)
 
 # Parking Lot Management Endpoints
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])

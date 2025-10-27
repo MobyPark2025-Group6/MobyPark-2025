@@ -59,6 +59,47 @@ class UserService:
         return MessageResponse(message="User created successfully")
     
     @staticmethod
+    def delete_user(user_id: str) -> MessageResponse:
+        """Delete a user by ID"""
+        users = load_json('data/users.json')
+        updated_users = [user for user in users if user.get('id') != user_id]
+        
+        if len(updated_users) == len(users):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        save_user_data(updated_users)
+        return MessageResponse(message="User deleted successfully")
+    
+    @staticmethod
+    def update_user(user_id: str, user_data: UserRegister) -> MessageResponse:
+        """Update user information"""
+        users = load_json('data/users.json')
+        user_found = False
+        
+        for user in users:
+            if user.get('id') == user_id:
+                user_found = True
+                user['name'] = user_data.name
+                user['email'] = user_data.email
+                user['phone'] = user_data.phone
+                user['birth_year'] = user_data.birth_year
+                if user_data.password:
+                    user['password'] = UserService.hash_password(user_data.password)
+                break
+        
+        if not user_found:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        save_user_data(users)
+        return MessageResponse(message="User updated successfully")
+    
+    @staticmethod
     def authenticate_user(credentials: UserLogin) -> LoginResponse:
         """Authenticate user and create session"""
         # Validate credentials
