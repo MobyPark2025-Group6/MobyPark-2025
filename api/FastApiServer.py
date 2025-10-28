@@ -2,11 +2,14 @@ from fastapi import FastAPI, status, Header, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, List, Optional
 import uvicorn
+from models.vehicle_models import Vehicle
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
+from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.vehicle_service import VehicleService
+from services.payment_service import PaymentService
 
 # Define tags for API organization
 tags_metadata = [
@@ -318,16 +321,67 @@ async def delete_parking_session(
 
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
-# Placeholder endpoints for future implementation
-@app.get("/payments", tags=["Payments"])
-async def get_payments():
-    """Get payment history (Coming Soon)"""
-    return {"message": "Payments endpoint - Coming Soon"}
+from fastapi import Depends
 
-@app.post("/payments", tags=["Payments"])
-async def create_payment():
-    """Process a new payment (Coming Soon)"""
-    return {"message": "Payment processing - Coming Soon"}
+@app.get("/payments", response_model=List[PaymentOut], tags=["Payments"])
+async def get_payments(token: Optional[str] = Depends(get_token)):
+    """Get all payments for the authenticated user"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    return PaymentService.get_user_payments(session["username"])
+
+
+@app.get("/payments/{username}", response_model=List[PaymentOut], tags=["Payments"])
+async def get_user_payments(username: str, token: Optional[str] = Depends(get_token)):
+    """Admin only: Get payments of a specific user"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    try:
+        return PaymentService.get_all_user_payments(session, username)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
+@app.post("/payments", response_model=dict, status_code=201, tags=["Payments"])
+async def create_payment(payment: PaymentCreate, token: Optional[str] = Depends(get_token)):
+    """Create a new payment"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    payment_obj = PaymentService.create_payment(payment, session)
+    return {"status": "Success", "payment": payment_obj}
+
+
+@app.post("/payments/refund", response_model=dict, status_code=201, tags=["Payments"])
+async def refund_payment(payment: PaymentRefund, token: Optional[str] = Depends(get_token)):
+    """Issue a refund (Admin only)"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    if session["role"] != "ADMIN":
+        raise HTTPException(status_code=403, detail="Access denied")
+    refund_obj = PaymentService.refund_payment(payment, session)
+    return {"status": "Success", "payment": refund_obj}
+
+
+@app.put("/payments/{transaction_id}", response_model=dict, tags=["Payments"])
+async def update_payment(transaction_id: str, update: PaymentUpdate, token: Optional[str] = Depends(get_token)):
+    """Complete or validate a payment transaction"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    try:
+        updated_payment = PaymentService.update_payment(transaction_id, update)
+        return {"status": "Success", "payment": updated_payment}
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    except PermissionError:
+        raise HTTPException(status_code=401, detail="Validation failed")
+
+
+# Placeholder endpoints for future implementation
 
 @app.get("/vehicles", tags=["Vehicles"])
 async def get_vehicles():
@@ -513,16 +567,6 @@ async def delete_parking_session(
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
 # Placeholder endpoints for future implementation
-@app.get("/payments", tags=["Payments"])
-async def get_payments():
-    """Get payment history (Coming Soon)"""
-    return {"message": "Payments endpoint - Coming Soon"}
-
-@app.post("/payments", tags=["Payments"])
-async def create_payment():
-    """Process a new payment (Coming Soon)"""
-    return {"message": "Payment processing - Coming Soon"}
-
 @app.get("/vehicles", tags=["Vehicles"])
 async def get_vehicles():
     """Get user's registered vehicles (Coming Soon)"""
