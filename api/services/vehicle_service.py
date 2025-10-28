@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 import json
 from datetime import datetime
+from models.vehicle_models import Vehicle
 from models.user_models import User
 from storage_utils import load_json
 from services.validation_service import ValidationService
@@ -9,10 +10,24 @@ from storage_utils import load_vehicle_data,save_data
 from services.user_service import UserService
 class VehicleService:
     @staticmethod
-    def checkForVehicle(session_user : User , Vid : str):
-        """Check if the vehicle exists"""
+    def getUserVehicleID(session_user : User ):
+        """getUserVehicleIDs"""
         vehicles = load_vehicle_data()
         uvehicles = [v["id"] for v in vehicles if v["user_id"] == session_user["id"]]
+        return uvehicles
+    
+    @staticmethod
+    def getUserVehicle(session_user : User, vid :str ):
+        """getUserVehicle"""
+        vehicles = load_vehicle_data()
+        uvehicles = [v for v in vehicles if v["id"] == vid]
+        return uvehicles
+    
+    @staticmethod
+    def checkForVehicle(session_user : User , Vid : str):
+        """Check if the vehicle exists"""
+
+        uvehicles = VehicleService.getUserVehicleID(session_user)
         if not Vid in uvehicles:
               raise HTTPException(
                 status_code=status.HTTP_404_FORBIDDEN,
@@ -21,7 +36,7 @@ class VehicleService:
         
     @staticmethod
     def check_for_parameters(data):
-        for field in ["name", "license_plate"]:
+        for field in ["make", "license_plate"]:
             if not field in data:
                 raise HTTPException(
                 status_code=status.HTTP_401_FORBIDDEN,
@@ -31,9 +46,7 @@ class VehicleService:
     
     @staticmethod
     def check_for_liscense_id(lid, session_user):
-        vehicles = load_json("data/vehicles.json")
-        uvehicles = [v["license_plate"] for v in vehicles if v["user_id"] == session_user["id"]]
-
+        uvehicles = VehicleService.getUserVehicleID(session_user)
         if str(lid) in uvehicles:
                 raise HTTPException(
                 status_code=status.HTTP_401_FORBIDDEN,
@@ -42,8 +55,8 @@ class VehicleService:
         return
     @staticmethod
     def check_for_liscense_id_not_exists(lid,session_user ):
-        vehicles = load_json("data/vehicles.json")
-        uvehicles = vehicles.get(session_user["username"], {})
+    
+        uvehicles = VehicleService.getUserVehicleID(session_user)
     
         if lid not in uvehicles:
                 raise HTTPException(
@@ -59,7 +72,6 @@ class VehicleService:
         VehicleService.check_for_parameters(data)
 
         vehicles = load_json("data/vehicles.json")
-        uvehicles = [v["id"] for v in vehicles if v["user_id"] == session_user["id"]]
 
         lid = data["license_plate"].replace("-", "")
         VehicleService.check_for_liscense_id(lid, session_user)
@@ -68,7 +80,7 @@ class VehicleService:
             "id": len(vehicles) + 1,  # of gebruik een uuid
             "user_id": session_user["id"],
             "licenseplate": data["license_plate"],
-            "name": data["name"],
+            "make": data["make"],
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat()
         }
@@ -97,44 +109,44 @@ class VehicleService:
 
     #Put 
     @staticmethod
-    def ChangeVehicle(token: str, vid: str, license_plate: Optional[str], name: Optional[str]):
+    def ChangeVehicle(token: str, vid: str, NewData: Vehicle):
+        # Step 1: Validate user
         session_user = ValidationService.validate_session_token(token)
-        username = session_user["username"]
+        VehicleService.checkForVehicle(session_user, vid)
 
-        if not name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Required field missing: name"
-            )
-
+        # Step 2: Load all vehicles
         vehicles = load_vehicle_data()
-        user_vehicles = vehicles.get(username, {})
 
-        # Ensure user key exists
-        if username not in vehicles:
-            vehicles[username] = {}
+        # Step 3: Find the index of the vehicle
+        index = None
+        for i, v in enumerate(vehicles):
+            if v["id"] == vid and v["user_id"] == session_user["id"]:
+                index = i
+                break
 
-        # Create or update vehicle
-        if vid not in user_vehicles:
-            vehicles[username][vid] = {
-                "license_plate": license_plate,
-                "name": name,
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-            }
-        else:
-            vehicle = user_vehicles[vid]
-            if license_plate:
-                vehicle["license_plate"] = license_plate
-            vehicle["name"] = name
-            vehicle["updated_at"] = datetime.now().isoformat()
+        if index is None:
+            raise ValueError(f"Vehicle with id {vid} not found for user {session_user['username']}")
 
+        # Step 4: Convert Vehicle object to dict if needed
+        if not isinstance(NewData, dict):
+            try:
+                NewData = NewData.model_dump()  # Pydantic v2
+            except AttributeError:
+                try:
+                    NewData = NewData.dict()      # Pydantic v1
+                except AttributeError:
+                    from dataclasses import asdict
+                    NewData = asdict(NewData)    # dataclass fallback
+
+        # Step 5: Replace the old vehicle with the new one
+        vehicles[index] = NewData
+
+        # Step 6: Save updated vehicles
         save_data("data/vehicles.json", vehicles)
 
-        return {
-            "status": "Success",
-            "vehicle": vehicles[username][vid]
-        }
+        return {"status": "Success", "vehicle": vehicles[index]}
+
+       
     
     #Delete
     @staticmethod
@@ -152,10 +164,9 @@ class VehicleService:
     def get_all_vehicles_admin_user(token : str, user_name : str): 
         """Admin vehicle lookup for a user"""
         if ValidationService.check_valid_admin():
-            vehicles = load_json("data/vehicles.json")
             user = user_name
             UserService.user_exists(user)
-            return vehicles.get(user, {})
+            return VehicleService.getUserVehicleID(user)
         return 
          
     
@@ -163,12 +174,12 @@ class VehicleService:
     def get_all_vehicles(token : str): 
         """Get all user vehicles """
         session_user = ValidationService.validate_session_token(token)
-        vehicles = load_json("data/vehicles.json")
+  
         user = session_user["username"]
-        user_id = session_user["id"]
+    
         UserService.user_exists(user)
-        all_vehicles = [v for v in vehicles if v["user_id"] == user_id]
-        return all_vehicles
+        user_vehicles = VehicleService.getUserVehicleID(session_user)
+        return user_vehicles
 
     @staticmethod
     def get_vehicle_reservations(token : str, vid : str): 

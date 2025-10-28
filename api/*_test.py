@@ -1,6 +1,7 @@
 import pytest
-import requests
 
+from models.vehicle_models import Vehicle
+from storage_utils import load_vehicle_data, save_data
 from services.vehicle_service import VehicleService
 from services.user_service import *
 from models.user_models import * 
@@ -31,29 +32,39 @@ class TestMobyPark:
         assert len(response) >= 0
 
     def test_get_vehicles_admin(self):
-        # implement with admin in mind
-        # response = VehicleService.get_all_vehicles_admin_user(TestMobyPark.authorization,"cindy.leenders42")
-        # assert isinstance(response,list)
-        # assert response.len >= 0
-        pass
+        response = VehicleService.get_all_vehicles_admin_user(TestMobyPark.authorization,"cindy.leenders42")
+        assert isinstance(response,list)
+        assert response.len >= 0
+        
 
     def test_change_vehicle(self):
+       
         response = VehicleService.ChangeVehicle(
-             TestMobyPark.authorization,
-            vid="1",
-            license_plate="76-KQQ-7",
-            name="308"
+            TestMobyPark.authorization,
+            "1",
+            Vehicle(
+                id="1",
+                user_id="1",
+                license_plate="76-KQQ-7",
+                make="Peugeot",
+                model="308",
+                color="Brown",
+                year=2024,
+                created_at="2024-08-13"
+            )
+
         )
+        
         assert response["status"] == "Success"
         assert "vehicle" in response
         vehicle = response["vehicle"]
-        assert vehicle["name"] == "308"
+        assert vehicle["model"] == "308"
         assert vehicle["license_plate"] == "76-KQQ-7"
         
     def test_create_vehicle(self):
         vehicle_data = {
             "license_plate" : "12-test-12",
-            "name": "test",
+            "make": "test",
         }
         response = VehicleService.CreateVehicle( TestMobyPark.authorization, vehicle_data)
         assert response["status"] == "Success"
@@ -61,12 +72,18 @@ class TestMobyPark:
     def test_act_on_vehicle(self):
         vehicle_data = {
             "license_plate" : "12-test-12",
-            "name": "test",
+            "make": "test",
         }
         response = VehicleService.CreateVehicle( TestMobyPark.authorization, vehicle_data)
         assert response["status"] == "Success"
     def test_delete_vehicle(self):
-        pass
+        vehicles = load_vehicle_data()
+        vehicle = [v for v in vehicles if v.get("license_plate") != "12-test-12"]
+        save_data("vehicles.json", vehicle)
+
+        
+        updated_vehicles = load_vehicle_data()
+        assert all(v.get("license_plate") != "12-test-12" for v in updated_vehicles)
         
 
 

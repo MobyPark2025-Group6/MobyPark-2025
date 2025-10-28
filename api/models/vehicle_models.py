@@ -7,6 +7,7 @@ class Vehicle(BaseModel):
     user_id : str
     license_plate : str 
     make : str 
+    model : str 
     color : str
     year : int 
     created_at : str

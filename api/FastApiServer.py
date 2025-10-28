@@ -362,7 +362,7 @@ async def get_vehicles(
 @app.put("/vehicles/{vid}")
 async def change_vehicle(
     vid: str,
-    vehicle: UpdateVehicle,
+    vehicle: Vehicle,
     authorization: Annotated[Optional[str], Header()] = None
 ):
     """
@@ -376,8 +376,7 @@ async def change_vehicle(
     return VehicleService.ChangeVehicle(
         authorization,
         vid,
-        vehicle.license_plate,
-        vehicle.model
+        vehicle
     )
 
 @app.post("/vehicles")
