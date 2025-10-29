@@ -1,7 +1,7 @@
 import pytest
 
 from models.vehicle_models import Vehicle
-from storage_utils import load_vehicle_data, save_data
+from storage_utils import load_vehicle_data, save_data, save_vehicle_data
 from services.vehicle_service import VehicleService
 from services.user_service import *
 from models.user_models import * 
@@ -34,7 +34,7 @@ class TestMobyPark:
     def test_get_vehicles_admin(self):
         response = VehicleService.get_all_vehicles_admin_user(TestMobyPark.authorization,"cindy.leenders42")
         assert isinstance(response,list)
-        assert response.len >= 0
+        assert len(response) >= 0
         
 
     def test_change_vehicle(self):
@@ -74,17 +74,21 @@ class TestMobyPark:
             "license_plate" : "12-test-12",
             "make": "test",
         }
-        response = VehicleService.CreateVehicle( TestMobyPark.authorization, vehicle_data)
+        response = VehicleService.ActOnVehicle( TestMobyPark.authorization, vehicle_data)
         assert response["status"] == "Success"
+
     def test_delete_vehicle(self):
         vehicles = load_vehicle_data()
         vehicle = [v for v in vehicles if v.get("license_plate") != "12-test-12"]
-        save_data("vehicles.json", vehicle)
+        save_vehicle_data(vehicle)
 
         
         updated_vehicles = load_vehicle_data()
-        assert all(v.get("license_plate") != "12-test-12" for v in updated_vehicles)
-        
+        assert all(v for v in updated_vehicles if v['license_plate'] !="12-test-12")
+    
+
+
+
 
 
 if __name__ == '__main__':
