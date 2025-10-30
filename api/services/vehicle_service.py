@@ -2,16 +2,18 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from models.vehicle_models import Vehicle
 from models.user_models import User
+
 from storage_utils import load_json
 from services.validation_service import ValidationService
-from storage_utils import load_vehicle_data, save_vehicle_data
+from storage_utils import load_vehicle_data, save_vehicle_data, load_parking_lot_data
 from services.user_service import UserService
 class VehicleService:
+
     @staticmethod
     def getUserVehicleID(session_user : User ):
         """getUserVehicleIDs"""
         vehicles = load_vehicle_data()
-        uvehicles = [v["id"] for v in vehicles if v["user_id"] == session_user["id"]]
+        uvehicles = [v['id'] for v in vehicles if v['user_id'] == session_user['id']]
         return uvehicles
     
     @staticmethod
@@ -34,17 +36,18 @@ class VehicleService:
 
         uvehicles = VehicleService.getUserVehicleID(session_user)
         if not Vid in uvehicles:
-              raise HTTPException(
-                status_code=status.HTTP_404_FORBIDDEN,
-                detail="Not Found"
-            )
+                            raise HTTPException(
+                                status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Not Found"
+                        )
+        
         
     @staticmethod
     def check_for_parameters(data):
         for field in ["make", "license_plate"]:
             if not field in data:
                 raise HTTPException(
-                status_code=status.HTTP_401_FORBIDDEN,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"error": "Require field missing", "field": field}
             )
         return
@@ -90,19 +93,21 @@ class VehicleService:
 
     @staticmethod
     def ActOnVehicle(token : str, data : dict) :
+        #Potentially arbirtary, the expected function of acting on a vehicle id might already be handled in parking_service
         # session_user = ValidationService.validate_session_token(token)
-        # ValidationService.check_for_parameters(data)
+        # VehicleService.check_for_parameters(data)
         
         # lid = data["license_plate"].replace("-", "")
-        # vehicles = load_json("data/vehicles.json")
+        # vehicles = load_vehicle_data()
         # if not "parkinglot" in data :
         #     raise HTTPException(
-        #         status_code=status.HTTP_401_FORBIDDEN,
+        #         status_code=status.HTTP_400_BAD_REQUEST,
         #         detail={"error": "Require field missing", "field": "parkinglot"}
         #     )
-        # ValidationService.check_for_liscense_id_not_exists(lid, session_user)
+        # not VehicleService.check_for_liscense_id(lid, session_user)
         # return {"status": "Accepted", "vehicle": vehicles[session_user["username"]][lid]}
-        return {"status" : "Not implemented"}
+        pass
+        
  
 
     #Put 
@@ -145,13 +150,18 @@ class VehicleService:
     #Delete
     @staticmethod
     def DeleteVehicle(token : str , vid : str) :
+        vehicles = load_vehicle_data()
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
-        vehicles = load_vehicle_data()
-        del vehicles[session_user["username"]][vid]
-        save_vehicle_data(vehicles)
-        return {"status": "Deleted"}
+        cur_vehicle = [v for v in vehicles if v['id'] == vid][0]
 
+        remaining = [v for v in vehicles if v.get("license_plate") != cur_vehicle['license_plate']]
+        save_vehicle_data(remaining)
+
+        updated_vehicles = load_vehicle_data()
+        if all(v.get("license_plate") != cur_vehicle['license_plate'] for v in updated_vehicles) :
+             return {"Status" : "Deleted"}
+        return {"Status" : "Not Deleted"}
     #Get
     @staticmethod
 
@@ -179,14 +189,13 @@ class VehicleService:
     def get_vehicle_reservations(token : str, vid : str): 
         """Get all vehicle reservations for a vehicle"""
         session_user = ValidationService.validate_session_token(token)
-
+        
         VehicleService.checkForVehicle(session_user, vid)
-        # TODO In the old code, it returned nothing. For the 'refactor' it was decided to mostly copy over the old code with the new methods applied. This should be changed later
-        # self.send_response(200)
-        # self.send_header("Content-type", "application/json")
-        # self.end_headers()
-        # self.wfile.write(json.dumps([]).encode("utf-8"))
-        return
+        reservations = load_parking_lot_data()
+        vehicle_reservations = [r for r in reservations if r['vehicle_id'] == vid]
+        if not vehicle_reservations:
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="No reservations")
+        return vehicle_reservations
         
 
     @staticmethod
@@ -195,6 +204,7 @@ class VehicleService:
         session_user = ValidationService.validate_session_token(token)
 
         VehicleService.checkForVehicle(session_user, vid)
+    
         # TODO In the old code, it returned nothing. For the 'refactor' it was decided to mostly copy over the old code with the new methods applied. This should be changed later
         # self.send_response(200)
         # self.send_header("Content-type", "application/json")

@@ -15,3 +15,7 @@ class Vehicle(BaseModel):
 class UpdateVehicle(BaseModel):
     license_plate: Optional[str] = None
     model: Optional[str] = None
+
+class ActOnVehicle(BaseModel):
+    parking_lot : str
+    license_plate : str 

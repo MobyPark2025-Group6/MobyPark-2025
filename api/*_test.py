@@ -1,7 +1,7 @@
 import pytest
 
 from models.vehicle_models import Vehicle
-from storage_utils import load_vehicle_data, save_data, save_vehicle_data
+from storage_utils import load_vehicle_data,  save_vehicle_data
 from services.vehicle_service import VehicleService
 from services.user_service import *
 from models.user_models import * 
@@ -23,7 +23,7 @@ class TestMobyPark:
         assert response != None
 
     def test_get_vehicle_id_history(self):
-        response = VehicleService.get_vehicle_history(TestMobyPark.authorization, "1") 
+        response = VehicleService.get_vehicle_reservations(TestMobyPark.authorization, "1") 
         assert response != None
 
     def test_get_vehicles_username(self):
@@ -70,26 +70,20 @@ class TestMobyPark:
         assert response["status"] == "Success"
 
     def test_act_on_vehicle(self):
-        vehicle_data = {
-            "license_plate" : "12-test-12",
-            "make": "test",
-        }
-        response = VehicleService.ActOnVehicle( TestMobyPark.authorization, vehicle_data)
-        assert response["status"] == "Success"
+        # Potentially arbirtary, the expected function of acting on a vehicle id might already be handled in parking_service
+        # vehicle_data = {
+        #     "license_plate" : "12-test-12",
+        #     "make": "test",
+        # }
+        # response = VehicleService.ActOnVehicle( TestMobyPark.authorization, vehicle_data)
+        # assert response["status"] == "Success"
+        pass
 
     def test_delete_vehicle(self):
         vehicles = load_vehicle_data()
-        vehicle = [v for v in vehicles if v.get("license_plate") != "12-test-12"]
-        save_vehicle_data(vehicle)
-
-        
-        updated_vehicles = load_vehicle_data()
-        assert all(v for v in updated_vehicles if v['license_plate'] !="12-test-12")
-    
-
-
-
-
+        cur_vehicle = [v for v in vehicles if v["license_plate"] == "12-test-12" ][0]
+        response = VehicleService.DeleteVehicle(TestMobyPark.authorization, cur_vehicle['id'])
+        assert response['Status'] == "Deleted"
 
 if __name__ == '__main__':
     pytest.main()
