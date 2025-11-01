@@ -19,11 +19,11 @@ class TestMobyPark:
         assert len(response.session_token) > 0
 
     def test_get_vehicle_id_reservations(self):
-        response = VehicleService.get_vehicle_history(TestMobyPark.authorization, "1") 
+        response = VehicleService.get_vehicle_reservations(TestMobyPark.authorization, "1") 
         assert response != None
 
     def test_get_vehicle_id_history(self):
-        response = VehicleService.get_vehicle_reservations(TestMobyPark.authorization, "1") 
+        response = VehicleService.get_vehicle_history(TestMobyPark.authorization, "1") 
         assert response != None
 
     def test_get_vehicles_username(self):
