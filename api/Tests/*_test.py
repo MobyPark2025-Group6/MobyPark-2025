@@ -79,7 +79,7 @@ class TestMobyPark:
 
     def test_change_vehicle(self):
        
-        response = VehicleService.ChangeVehicle(
+        response = VehicleService.change_vehicle(
             TestMobyPark.authorization,
             "1",
             Vehicle(
@@ -122,7 +122,7 @@ class TestMobyPark:
     def test_delete_vehicle(self):
         vehicles = load_vehicle_data()
         cur_vehicle = [v for v in vehicles if v["license_plate"] == "12-test-12" ][0]
-        response = VehicleService.DeleteVehicle(TestMobyPark.authorization, cur_vehicle['id'])
+        response = VehicleService.delete_vehicle(TestMobyPark.authorization, cur_vehicle['id'])
         assert response['Status'] == "Deleted"
 
 if __name__ == '__main__':

@@ -112,7 +112,7 @@ class VehicleService:
 
     #Put 
     @staticmethod
-    def ChangeVehicle(token: str, vid: str, NewData: Vehicle):
+    def change_vehicle(token: str, vid: str, NewData: Vehicle):
 
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
@@ -149,7 +149,7 @@ class VehicleService:
     
     #Delete
     @staticmethod
-    def DeleteVehicle(token : str , vid : str) :
+    def delete_vehicle(token : str , vid : str) :
         vehicles = load_vehicle_data()
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
