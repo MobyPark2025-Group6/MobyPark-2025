@@ -51,7 +51,7 @@ class ReservationService:
         """Retrieve reservations for a specific user"""
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
-        if session_user["id"] != user_id or not ValidationService.check_valid_admin(session_user):
+        if session_user["id"] != user_id and not ValidationService.check_valid_admin(session_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: Cannot access other user's reservations"
@@ -66,6 +66,7 @@ class ReservationService:
                 )
 
         reservations = load_reservation_data()
+
         user_reservations = [res for res in reservations if res["user_id"] == user_id]
         return {"reservations": user_reservations}
     
