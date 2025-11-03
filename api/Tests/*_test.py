@@ -106,7 +106,7 @@ class TestMobyPark:
             "license_plate" : "12-test-12",
             "make": "test",
         }
-        response = VehicleService.CreateVehicle( TestMobyPark.authorization, vehicle_data)
+        response = VehicleService.create_vehicle( TestMobyPark.authorization, vehicle_data)
         assert response["status"] == "Success"
 
     def test_act_on_vehicle(self):

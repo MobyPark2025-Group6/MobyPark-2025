@@ -367,7 +367,7 @@ async def change_vehicle(
         vehicle: Vehicle data to update (license_plate, name)
         authorization: Session token for authentication
     """
-    return VehicleService.ChangeVehicle(
+    return VehicleService.change_vehicle(
         authorization,
         vid,
         vehicle
@@ -385,7 +385,7 @@ async def create_vehicle(
         vehicle_data: Dictionary containing vehicle information (name, license_plate)
         authorization: Session token for authentication
     """
-    return VehicleService.CreateVehicle(authorization, vehicle_data)
+    return VehicleService.create_vehicle(authorization, vehicle_data)
 
 @app.post("/vehicles/{lid}/entry")
 async def act_on_vehicle(
@@ -407,7 +407,7 @@ async def delete_vehicle(
         vid: Vehicle ID to delete
         authorization: Session token for authentication
     """
-    return VehicleService.DeleteVehicle(authorization, vid)
+    return VehicleService.delete_vehicle(authorization, vid)
 
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])

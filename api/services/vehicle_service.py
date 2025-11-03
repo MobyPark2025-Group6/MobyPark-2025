@@ -68,7 +68,7 @@ class VehicleService:
 
     #Post
     @staticmethod
-    def CreateVehicle(token: str, data: dict):
+    def create_vehicle(token: str, data: dict):
         session_user = ValidationService.validate_session_token(token)
         VehicleService.check_for_parameters(data)
 
