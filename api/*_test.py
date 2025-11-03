@@ -18,6 +18,36 @@ class TestMobyPark:
         assert isinstance(response.session_token, str)
         assert len(response.session_token) > 0
 
+    def test_user_creation(self):
+        user_data = UserRegister(
+            username="testuser",
+            password="testpassword",
+            name="Test User",
+            email="test.user@example.com"
+        )
+        response = UserService.create_user(user_data)
+        assert response.message == "User created successfully"  
+
+    def test_user_read(self):
+        user = UserService.get_user_by_username("testuser")
+        assert user is not None
+        assert user.username == "testuser"
+        assert user.name == "Test User"
+        assert user.email == "test.user@example.com"
+
+    def test_user_update(self):
+        user_data = User(
+            username="testuser",
+            name="Updated User",
+            email="updated.user@example.com"
+        )
+        response = UserService.update_user(user_data)
+        assert response.message == "User updated successfully"
+
+    def test_user_deletion(self):
+        response = UserService.delete_user("testuser")
+        assert response.message == "User deleted successfully"
+
     def test_get_vehicle_id_reservations(self):
         response = VehicleService.get_vehicle_reservations(TestMobyPark.authorization, "1") 
         assert response != None
