@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Header, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, List, Optional
 import uvicorn
-from models.vehicle_models import Vehicle
+from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
@@ -446,20 +446,22 @@ async def get_vehicles(
 @app.put("/vehicles/{vid}")
 async def change_vehicle(
     vid: str,
-    license_plate: str,
-    name: str,
+    vehicle: Vehicle,
     authorization: Annotated[Optional[str], Header()] = None
 ):
     """
-    Change/update a vehicle's information
+    Change/update a vehicle's information.
     
     Args:
         vid: Vehicle ID to update
-        license_plate: Vehicle license plate
-        name: Vehicle name/description
+        vehicle: Vehicle data to update (license_plate, name)
         authorization: Session token for authentication
     """
-    return VehicleService.ChangeVehicle(authorization, vid, license_plate, name)
+    return VehicleService.ChangeVehicle(
+        authorization,
+        vid,
+        vehicle
+    )
 
 @app.post("/vehicles")
 async def create_vehicle(
@@ -475,14 +477,13 @@ async def create_vehicle(
     """
     return VehicleService.CreateVehicle(authorization, vehicle_data)
 
-@app.post("/vehicles/{vid}/entry")
+@app.post("/vehicles/{lid}/entry")
 async def act_on_vehicle(
-    vid: str,
-    request: dict,
+    lid: str,
     authorization: str = Header(None, alias="Authorization")
 ):
     """Act on a vehicle (e.g., parking lot entry)"""
-    return VehicleService.ActOnVehicle(authorization, vid, request)
+    return VehicleService.ActOnVehicle(authorization, lid)
 
 @app.delete("/vehicles/{vid}")
 async def delete_vehicle(
