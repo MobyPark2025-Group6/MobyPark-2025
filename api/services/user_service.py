@@ -152,3 +152,41 @@ class UserService:
                     'active': user.get('active', True)
                 }
         return None
+    
+    @staticmethod
+    def update_user(user_data: UserRegister) -> MessageResponse:
+        """Update existing user details"""
+        users = load_json('data/users.json')
+        for user in users:
+            if user.get("username") == user_data.username:
+                user['name'] = user_data.name
+                user['email'] = user_data.email
+                user['phone'] = user_data.phone
+                user['birth_year'] = user_data.birth_year
+                save_user_data(users)
+                return MessageResponse(message="User updated successfully")
+        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    @staticmethod
+    def delete_user(username: str) -> MessageResponse:
+        """Delete user by username"""
+        users = load_json('data/users.json')
+        for i, user in enumerate(users):
+            if user.get("username") == username:
+                users.pop(i)
+                save_user_data(users)
+                return MessageResponse(message="User deleted successfully")
+        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    @staticmethod
+    def read_user(username: str) -> Optional[dict]:
+        """Read user details by username"""
+        return UserService.get_user_by_username(username)

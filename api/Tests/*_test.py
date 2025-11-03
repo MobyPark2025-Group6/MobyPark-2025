@@ -5,6 +5,7 @@ from storage_utils import load_vehicle_data,  save_vehicle_data
 from services.vehicle_service import VehicleService
 from services.user_service import *
 from models.user_models import * 
+import json
 
 authorization = None 
 class TestMobyPark:
@@ -31,9 +32,18 @@ class TestMobyPark:
     def test_user_read(self):
         user = UserService.get_user_by_username("testuser")
         assert user is not None
-        assert user.username == "testuser"
-        assert user.name == "Test User"
-        assert user.email == "test.user@example.com"
+        # Print all attributes of the returned user object for debugging
+        if isinstance(user, dict):
+            print(json.dumps(user, indent=2, default=str))
+        else:
+            try:
+                attrs = vars(user)
+            except TypeError:
+                attrs = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}
+            print(json.dumps(attrs, indent=2, default=str))
+        assert user["username"] == "testuser"
+        assert user["name"] == "Test User"
+        assert user["email"] == "test.user@example.com"
 
     def test_user_update(self):
         user_data = User(
