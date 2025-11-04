@@ -87,10 +87,11 @@ class ReservationService:
         
         # Ensure the user is getting a reservation for themselves or is an admin
         if not ValidationService.check_valid_admin(session_user):
-            if reservation.user_id != session_user["id"]:
+            if reservation["user_id"] != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied"
                 )
 
         return {"reservation": reservation}
+    
