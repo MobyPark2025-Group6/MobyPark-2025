@@ -67,33 +67,6 @@ def existing_reservations():
         }
     ]
 
-@pytest.fixture
-def sample_reservations():
-    """Fixture providing sample reservation data"""
-    return [
-        {
-            "id": "res1",
-            "user_id": "user123",
-            "table": "T1",
-            "date": "2024-12-01",
-            "time": "18:00"
-        },
-        {
-            "id": "res2",
-            "user_id": "user456",
-            "table": "T2",
-            "date": "2024-12-02",
-            "time": "19:00"
-        },
-        {
-            "id": "res3",
-            "user_id": "user123",
-            "table": "T3",
-            "date": "2024-12-03",
-            "time": "20:00"
-        }
-    ]
-
 class TestCreateReservation:
     """Tests for ReservationService.create_reservation"""
     
@@ -392,7 +365,6 @@ class TestCreateReservation:
         assert saved_data[2]["user_id"] == "user123"
         assert len(saved_data) == 3
 
-
 class TestGetReservationsList:
     """Tests for ReservationService.get_reservations_list"""
 
@@ -400,11 +372,6 @@ class TestGetReservationsList:
         """Test that a regular user can retrieve their own reservations"""
         user_id = "user123"
         token = "valid_token"
-        
-        # Mock ValidationService methods
-        # mock_validation_service["validate_token"] = mocker.patch('services.validation_service.ValidationService.validate_session_token')
-        # mock_validation_service["check_admin"] = mocker.patch('services.validation_service.ValidationService.check_valid_admin')
-        # mock_load_data = mocker.patch('services.reservation_service.load_reservation_data')
         
         # Setup mock returns
         mock_validation_service["validate_token"].return_value = {"id": user_id, "username": "testuser"}
@@ -525,12 +492,12 @@ class TestGetReservation:
         self, 
         mock_validation_service, 
         mock_load_reservation_data, 
-        sample_reservations
+        existing_reservations
     ):
         """Test that a user can retrieve their own reservation"""
-        res_id = "res1"
+        res_id = "1"
         token = "valid_token"
-        user_id = "user123"
+        user_id = "user456"
         
         # Setup mocks
         mock_validation_service['validate_token'].return_value = {
@@ -538,7 +505,7 @@ class TestGetReservation:
             "username": "testuser"
         }
         mock_validation_service['check_admin'].return_value = False
-        mock_load_reservation_data.return_value = sample_reservations
+        mock_load_reservation_data.return_value = existing_reservations
         
         # Execute
         result = ReservationService.get_reservation(res_id, token)
@@ -546,7 +513,7 @@ class TestGetReservation:
         # Assertions
         assert result["reservation"]["id"] == res_id
         assert result["reservation"]["user_id"] == user_id
-        assert result["reservation"]["table"] == "T1"
+        assert result["reservation"]["lot_id"] == "lot1"
         
         # Verify mocks were called
         mock_validation_service['validate_token'].assert_called_once_with(token)
@@ -557,10 +524,10 @@ class TestGetReservation:
         self,
         mock_validation_service,
         mock_load_reservation_data,
-        sample_reservations
+        existing_reservations
     ):
         """Test that an admin can retrieve any user's reservation"""
-        res_id = "res2"
+        res_id = "1"
         token = "admin_token"
         admin_id = "admin123"
         
@@ -570,7 +537,7 @@ class TestGetReservation:
             "username": "admin"
         }
         mock_validation_service['check_admin'].return_value = True
-        mock_load_reservation_data.return_value = sample_reservations
+        mock_load_reservation_data.return_value = existing_reservations
         
         # Execute
         result = ReservationService.get_reservation(res_id, token)
@@ -586,10 +553,10 @@ class TestGetReservation:
         self,
         mock_validation_service,
         mock_load_reservation_data,
-        sample_reservations
+        existing_reservations
     ):
         """Test that a regular user cannot access another user's reservation"""
-        res_id = "res2"  # This belongs to user456
+        res_id = "1"  # This belongs to user456
         token = "valid_token"
         user_id = "user123"  # Different user
         
@@ -599,7 +566,7 @@ class TestGetReservation:
             "username": "testuser"
         }
         mock_validation_service['check_admin'].return_value = False
-        mock_load_reservation_data.return_value = sample_reservations
+        mock_load_reservation_data.return_value = existing_reservations
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -612,7 +579,7 @@ class TestGetReservation:
         self,
         mock_validation_service,
         mock_load_reservation_data,
-        sample_reservations
+        existing_reservations
     ):
         """Test that requesting a non-existent reservation raises 404"""
         res_id = "nonexistent_res"
@@ -623,7 +590,7 @@ class TestGetReservation:
             "id": "user123",
             "username": "testuser"
         }
-        mock_load_reservation_data.return_value = sample_reservations
+        mock_load_reservation_data.return_value = existing_reservations
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -638,7 +605,7 @@ class TestGetReservation:
         mock_load_reservation_data
     ):
         """Test that an invalid token raises an exception"""
-        res_id = "res1"
+        res_id = "1"
         token = "invalid_token"
         
         # Mock ValidationService to raise exception
@@ -660,7 +627,7 @@ class TestGetReservation:
         mock_load_reservation_data
     ):
         """Test that requesting a reservation when list is empty raises 404"""
-        res_id = "res1"
+        res_id = "1"
         token = "valid_token"
         
         # Setup mocks
