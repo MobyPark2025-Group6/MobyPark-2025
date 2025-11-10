@@ -888,7 +888,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps([]).encode("utf-8"))
                 return
             elif self.path.endswith("/history"):
-                vid = self.path.split("/")[2]
+                
                 vehicles = load_json("data/vehicles.json")
                 uvehicles = vehicles.get(session_user["username"], {})
                 if vid not in uvehicles:

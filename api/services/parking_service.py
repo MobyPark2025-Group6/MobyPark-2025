@@ -120,17 +120,13 @@ class ParkingService:
     def create_parking_lot(parking_lot_data: ParkingLotCreate, token: Optional[str]) -> ParkingLotResponse:
         """Create a new parking lot (Admin only)"""
         # Validate session token
-        session_user = ParkingService.validate_session_token(token)
-        
+        session_user = ParkingService.validate_session_token(token)        
         # Validate admin access
-        ParkingService.validate_admin_access(session_user)
-        
+        ParkingService.validate_admin_access(session_user)        
         # Load existing parking lots
-        parking_lots = load_parking_lot_data()
-        
+        parking_lots = load_parking_lot_data()        
         # Create new parking lot ID
         new_lot_id = str(len(parking_lots) + 1)
-        
         # Add new parking lot
         parking_lots[new_lot_id] = {
             "name": parking_lot_data.name,
@@ -138,11 +134,85 @@ class ParkingService:
             "capacity": parking_lot_data.capacity,
             "hourly_rate": parking_lot_data.hourly_rate
         }
-        
         # Save parking lots
         save_parking_lot_data(parking_lots)
-        
         return ParkingLotResponse(
             message="Parking lot created successfully",
             parking_lot_id=new_lot_id
         )
+    
+    @staticmethod
+    def list_parking_lots(token: Optional[str]):
+        # Load and optionally filter data
+        parking_lots = load_parking_lot_data()
+        return parking_lots
+
+    @staticmethod
+    def get_parking_lot(lot_id: str, token: Optional[str]):
+        parking_lots = load_parking_lot_data()
+        if lot_id not in parking_lots:
+            raise HTTPException(status_code=404, detail="Parking lot not found")
+        return parking_lots[lot_id]
+
+    @staticmethod
+    def list_parking_sessions(lot_id: str, token: Optional[str]):
+        session_user = get_session(token)
+        if not session_user:
+            raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
+
+        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+        if session_user["role"] == "ADMIN":
+            return sessions
+
+        return [s for s in sessions if s["user"] == session_user["username"]]
+
+    @staticmethod
+    def get_parking_session(lot_id: str, session_id: str, token: Optional[str]):
+        session_user = get_session(token)
+        if not session_user:
+            raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
+
+        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        session = sessions[session_id]
+
+        if session_user["role"] != "ADMIN" and session["user"] != session_user["username"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        return session
+    
+    @staticmethod
+    def delete_parking_lot(lot_id: str, token: Optional[str]):
+        session_user = get_session(token)
+        if not session_user:
+            raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
+        if session_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        parking_lots = load_parking_lot_data()
+        if lot_id not in parking_lots:
+            raise HTTPException(status_code=404, detail="Parking lot not found")
+
+        del parking_lots[lot_id]
+        save_parking_lot_data(parking_lots)
+        return {"detail": "Parking lot deleted"}
+
+    @staticmethod
+    def delete_parking_session(lot_id: str, session_id: str, token: Optional[str]):
+        session_user = get_session(token)
+        if not session_user:
+            raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
+        if session_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+
+        if not session_id.isnumeric() or session_id not in sessions:
+            raise HTTPException(status_code=400, detail="Valid session ID required")
+
+        del sessions[session_id]
+        save_data(f"data/pdata/p{lot_id}-sessions.json", sessions)
+        return {"detail": "Session deleted"}

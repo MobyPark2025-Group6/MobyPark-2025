@@ -1,13 +1,16 @@
 from fastapi import FastAPI, status, Header, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 import uvicorn
-from models.reservation_models import ReservationRegister
+from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
+from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.reservation_service import ReservationService
+from services.vehicle_service import VehicleService
+from services.payment_service import PaymentService
 
 # Define tags for API organization
 tags_metadata = [
@@ -56,7 +59,6 @@ async def read_root():
     """Welcome endpoint with API information"""
     return {"message": "Welcome to MobyPark API!", "version": "1.0.0", "docs": "/docs"}
 
-# Authentication Endpoints
 @app.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
 async def register_user(user_data: UserRegister):
     """Register a new user account with optional extended information"""
@@ -67,7 +69,6 @@ async def login_user(credentials: UserLogin):
     """Authenticate user credentials and create a session token"""
     return UserService.authenticate_user(credentials)
 
-# User Management Endpoints
 @app.get("/users/{username}", response_model=User, tags=["Users"])
 async def get_user_profile(username: str):
     """Get detailed user profile information by username"""
@@ -78,6 +79,39 @@ async def get_user_profile(username: str):
             detail="User not found"
         )
     return user
+
+@app.delete("/users/{username}", response_model=MessageResponse, tags=["Users"])
+async def delete_user_account(
+    username: str,
+    token: Optional[str] = Depends(get_token)
+):
+    """Delete a user account (Admin only)
+    
+    Requires Bearer token in Authorization header with admin privileges.
+    Only users with ADMIN role can delete user accounts.
+    """
+    return UserService.delete_user(username, token)
+
+@app.get("/users", response_model=List[User], tags=["Users"])
+async def get_all_users(token: Optional[str] = Depends(get_token)):
+    """Get a list of all users (Admin only)
+
+    Requires Bearer token in Authorization header with admin privileges.
+    Only users with ADMIN role can access this endpoint.
+    """
+    return UserService.get_all_users(token)
+
+@app.get("/users/{username}/vehicles", response_model=List[Vehicle], tags=["Users"])
+async def get_user_vehicles(
+    username: str,
+    token: Optional[str] = Depends(get_token)
+):
+    """Get a list of vehicles registered to the specified user
+    
+    Requires Bearer token in Authorization header.
+    Users can only access their own vehicle list unless they have ADMIN role.
+    """
+    return UserService.get_user_vehicles(username, token)
 
 # Parking Lot Management Endpoints
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])
@@ -119,17 +153,332 @@ async def stop_parking_session(
     """
     return ParkingService.stop_parking_session(lot_id, session_data, token)
 
+@app.get("/parking-lots", response_model=list[ParkingLotResponse])
+async def list_parking_lots(
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """List all parking lots.
+
+    Requires Authorization header with valid session token.
+    """
+    return ParkingService.list_parking_lots(authorization)
+
+@app.get("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
+async def get_parking_lot(
+    lot_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Retrieve a specific parking lot by ID.
+
+    Requires Authorization header with valid session token.
+
+    """
+    return ParkingService.get_parking_lot(lot_id, authorization)
+
+@app.get("/parking-lots/{lot_id}/sessions", response_model=list[SessionResponse])
+async def list_parking_sessions(
+    lot_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """List all sessions in a parking lot.
+
+    Requires Authorization header with session token.
+    
+    Admins see all sessions; users see only their own.
+    """
+    return ParkingService.list_parking_sessions(lot_id, authorization)
+
+@app.get("/parking-lots/{lot_id}/sessions/{session_id}", response_model=SessionResponse)
+async def get_parking_session(
+    lot_id: str,
+    session_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Get details of a specific parking session.
+
+    Requires Authorization header with session token.
+
+    Only Admins or the session owner can access.
+
+    """
+    return ParkingService.get_parking_session(lot_id, session_id, authorization)
+
+@app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
+async def delete_parking_lot(
+    lot_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Delete a parking lot (Admin only)."""
+    return ParkingService.delete_parking_lot(lot_id, authorization)
+
+@app.delete("/parking-lots/{lot_id}/sessions/{session_id}", status_code=status.HTTP_200_OK)
+async def delete_parking_session(
+
+
+    lot_id: str,
+
+
+    session_id: str,
+
+
+    authorization: Annotated[Optional[str], Header()] = None
+
+
+):
+
+
+    """Delete a specific parking session (Admin only)."""
+
+
+    return ParkingService.delete_parking_session(lot_id, session_id, authorization)
+
+from fastapi import Depends
+
+@app.get("/payments", response_model=List[PaymentOut], tags=["Payments"])
+async def get_payments(token: Optional[str] = Depends(get_token)):
+    """Get all payments for the authenticated user"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    return PaymentService.get_user_payments(session["username"])
+
+
+@app.get("/payments/{username}", response_model=List[PaymentOut], tags=["Payments"])
+async def get_user_payments(username: str, token: Optional[str] = Depends(get_token)):
+    """Admin only: Get payments of a specific user"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    try:
+        return PaymentService.get_all_user_payments(session, username)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
+@app.post("/payments", response_model=dict, status_code=201, tags=["Payments"])
+async def create_payment(payment: PaymentCreate, token: Optional[str] = Depends(get_token)):
+    """Create a new payment"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    payment_obj = PaymentService.create_payment(payment, session)
+    return {"status": "Success", "payment": payment_obj}
+
+
+@app.post("/payments/refund", response_model=dict, status_code=201, tags=["Payments"])
+async def refund_payment(payment: PaymentRefund, token: Optional[str] = Depends(get_token)):
+    """Issue a refund (Admin only)"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    if session["role"] != "ADMIN":
+        raise HTTPException(status_code=403, detail="Access denied")
+    refund_obj = PaymentService.refund_payment(payment, session)
+    return {"status": "Success", "payment": refund_obj}
+
+
+@app.put("/payments/{transaction_id}", response_model=dict, tags=["Payments"])
+async def update_payment(transaction_id: str, update: PaymentUpdate, token: Optional[str] = Depends(get_token)):
+    """Complete or validate a payment transaction"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    try:
+        updated_payment = PaymentService.update_payment(transaction_id, update)
+        return {"status": "Success", "payment": updated_payment}
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    except PermissionError:
+        raise HTTPException(status_code=401, detail="Validation failed")
+
+
 # Placeholder endpoints for future implementation
-@app.get("/payments", tags=["Payments"])
-async def get_payments():
-    """Get payment history (Coming Soon)"""
-    return {"message": "Payments endpoint - Coming Soon"}
 
-@app.post("/payments", tags=["Payments"])
-async def create_payment():
-    """Process a new payment (Coming Soon)"""
-    return {"message": "Payment processing - Coming Soon"}
+@app.get("/vehicles", tags=["Vehicles"])
+async def get_vehicles():
+    """Get user's registered vehicles (Coming Soon)"""
+    return {"message": "Vehicles endpoint - Coming Soon"}
 
+@app.post("/vehicles", tags=["Vehicles"])
+async def register_vehicle():
+    """Register a new vehicle (Coming Soon)"""
+    return {"message": "Vehicle registration - Coming Soon"}
+
+@app.get("/reservations", tags=["Reservations"])
+async def get_reservations():
+    """Get user's parking reservations (Coming Soon)"""
+    return {"message": "Reservations endpoint - Coming Soon"}
+
+@app.post("/reservations", tags=["Reservations"])
+async def create_reservation():
+    """Create a new parking reservation (Coming Soon)"""
+    return {"message": "Reservation creation - Coming Soon"}
+
+@app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
+async def get_vehicle_id_reservations(
+    vehicle_id : str,
+    authorization: Annotated[Optional[str], Header()] = None
+    
+):
+    """
+    Acquire all reservations for a vehicle ID (currently none functional)
+    """
+    return VehicleService.get_vehicle_reservations(authorization, vehicle_id)
+
+@app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse)
+async def get_vehicle_id_history(
+    vehicle_id : str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Acquire all history for a vehicle by ID (currently none functional)
+    """
+    return  VehicleService.get_vehicle_history(authorization, vehicle_id) 
+
+@app.get("/vehicles/{user_name}", response_model=SessionResponse)
+async def get_vehicles(
+    user_name : str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Acquire all vehicles from a user as an admin
+    """
+    return VehicleService.get_all_vehicles_admin_user (authorization, user_name)
+
+@app.get("/vehicles", response_model=SessionResponse)
+async def get_vehicles(
+
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Acquire all vehicles from the user
+    """
+    return VehicleService.get_all_vehicles(authorization)
+@app.put("/vehicles/{vid}")
+async def change_vehicle(
+    vid: str,
+    vehicle: Vehicle,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Change/update a vehicle's information.
+    
+    Args:
+        vid: Vehicle ID to update
+        vehicle: Vehicle data to update (license_plate, name)
+        authorization: Session token for authentication
+    """
+    return VehicleService.change_vehicle(
+        authorization,
+        vid,
+        vehicle
+    )
+
+@app.post("/vehicles")
+async def create_vehicle(
+    vehicle_data: dict,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Create a new vehicle
+    
+    Args:
+        vehicle_data: Dictionary containing vehicle information (name, license_plate)
+        authorization: Session token for authentication
+    """
+    return VehicleService.create_vehicle(authorization, vehicle_data)
+
+@app.post("/vehicles/{lid}/entry")
+async def act_on_vehicle(
+    lid: str,
+    authorization: str = Header(None, alias="Authorization")
+):
+    """Act on a vehicle (e.g., parking lot entry)"""
+    return VehicleService.ActOnVehicle(authorization, lid)
+
+@app.delete("/vehicles/{vid}")
+async def delete_vehicle(
+    vid: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+    Delete a vehicle
+    
+    Args:
+        vid: Vehicle ID to delete
+        authorization: Session token for authentication
+    """
+    return VehicleService.delete_vehicle(authorization, vid)
+
+
+@app.get("/parking-lots", response_model=list[ParkingLotResponse])
+async def list_parking_lots(
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """List all parking lots.
+    
+    Requires Authorization header with valid session token.
+    """
+    return ParkingService.list_parking_lots(authorization)
+
+
+@app.get("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
+async def get_parking_lot(
+    lot_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Retrieve a specific parking lot by ID.
+    
+    Requires Authorization header with valid session token.
+    """
+    return ParkingService.get_parking_lot(lot_id, authorization)
+
+
+@app.get("/parking-lots/{lot_id}/sessions", response_model=list[SessionResponse])
+async def list_parking_sessions(
+    lot_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """List all sessions in a parking lot.
+    
+    Requires Authorization header with session token.
+    Admins see all sessions; users see only their own.
+    """
+    return ParkingService.list_parking_sessions(lot_id, authorization)
+
+
+@app.get("/parking-lots/{lot_id}/sessions/{session_id}", response_model=SessionResponse)
+async def get_parking_session(
+    lot_id: str,
+    session_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Get details of a specific parking session.
+    
+    Requires Authorization header with session token.
+    Only Admins or the session owner can access.
+    """
+    return ParkingService.get_parking_session(lot_id, session_id, authorization)
+
+@app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
+async def delete_parking_lot(
+    lot_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Delete a parking lot (Admin only)."""
+    return ParkingService.delete_parking_lot(lot_id, authorization)
+
+
+@app.delete("/parking-lots/{lot_id}/sessions/{session_id}", status_code=status.HTTP_200_OK)
+async def delete_parking_session(
+    lot_id: str,
+    session_id: str,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """Delete a specific parking session (Admin only)."""
+    return ParkingService.delete_parking_session(lot_id, session_id, authorization)
+
+# Placeholder endpoints for future implementation
 @app.get("/vehicles", tags=["Vehicles"])
 async def get_vehicles():
     """Get user's registered vehicles (Coming Soon)"""
