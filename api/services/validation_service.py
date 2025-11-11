@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from session_manager import get_session
 from typing import Dict, Any
+
 class ValidationService:
      @staticmethod
      def validate_session_token(token: str) -> Dict[str, Any]:
