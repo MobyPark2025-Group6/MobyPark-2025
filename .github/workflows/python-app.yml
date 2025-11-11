@@ -48,8 +48,8 @@ jobs:
 
     - name: Test with pytest
       run: |
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
-        coverage run -m pytest
+        PYTHONPATH=$PYTHONPATH:$(pwd)/api coverage run -m pytest
+
 
 
     - name: Run code coverage
