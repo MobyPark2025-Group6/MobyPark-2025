@@ -4,7 +4,10 @@ from hashlib import md5
 import math
 import uuid
 
-def calculate_price(parkinglot, sid, data):
+def calculate_price(parkinglot, sid, data, is_hotel_guest=False):
+    if is_hotel_guest:
+        return 0, 0, 0  # prijs = 0, uren = 0, dagen = 0
+    
     price = 0
     start = datetime.strptime(data["started"], "%d-%m-%Y %H:%M:%S")
 

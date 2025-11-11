@@ -65,7 +65,8 @@ class ParkingService:
             "licenseplate": session_data.licenseplate,
             "started": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
             "stopped": None,
-            "user": session_user["username"]
+            "user": session_user["username"],
+            "price": 0 if session_user.get("hotel_guest") else None
         }
         
         # Add session with new ID

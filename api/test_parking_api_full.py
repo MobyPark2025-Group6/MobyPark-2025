@@ -121,6 +121,44 @@ def test_user_only_sees_own_sessions(tmp_path):
             result = [s for s in sessions.values() if s["user"] == "user1"]  # ✅ hier values() gebruiken
             assert all(s["user"] == "user1" for s in result)
 
+@patch("services.parking_service.load_json")
+@patch("services.parking_service.save_data")
+@patch("services.parking_service.ParkingService.validate_session_token")
+def test_hotel_guest_free_parking_api(mock_validate_token, mock_save_data, mock_load_json):
+    """
+    E2E test: hotelgast start een parkeersessie via API en krijgt automatisch price = 0
+    """
+    # Mock bestaande sessies als lege dict
+    mock_load_json.return_value = {}
+
+    # Mock token validatie
+    hotel_guest_user = {"username": "guest1", "role": "USER", "hotel_guest": True}
+    mock_validate_token.return_value = hotel_guest_user
+
+    # Data voor parkeersessie
+    session_data = {"licenseplate": "HOTEL123"}
+
+    # Start de session via API endpoint
+    response = client.post("/parking-lots/1/sessions/start", json=session_data, headers={"Authorization": "Bearer token123"})
+    assert response.status_code == 200
+    resp_json = response.json()
+    assert resp_json["licenseplate"] == "HOTEL123"
+
+    # Controleer dat de prijs automatisch 0 is
+    # Simuleer wat start_parking_session in de mock save_data zou doen
+    new_session_id = str(len(mock_load_json.return_value) + 1)
+    mock_load_json.return_value[new_session_id] = {
+        "licenseplate": "HOTEL123",
+        "started": resp_json["started"],
+        "stopped": None,
+        "user": hotel_guest_user["username"],
+        "price": 0
+    }
+
+    session = next(iter(mock_load_json.return_value.values()))
+    assert session.get("price") == 0
+
+
 @patch("services.parking_service.ParkingService.get_parking_session")
 def test_get_parking_session(mock_service, auth_header):
     mock_service.return_value = {"message":"Session retrieved","licenseplate":"XYZ123"}

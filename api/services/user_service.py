@@ -59,6 +59,16 @@ class UserService:
         return MessageResponse(message="User created successfully")
     
     @staticmethod
+    def create_hotel_guest(user_data: UserRegister) -> MessageResponse:
+        """Create a hotel guest user with free parking privileges"""
+        # Zet hotel_guest flag
+        guest_data = user_data.dict()
+        guest_data["role"] = "USER"
+        guest_data["hotel_guest"] = True
+        return UserService.create_user(UserRegister(**guest_data))
+
+    
+    @staticmethod
     def authenticate_user(credentials: UserLogin) -> LoginResponse:
         """Authenticate user and create session"""
         # Validate credentials
