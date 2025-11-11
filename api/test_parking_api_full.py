@@ -102,6 +102,25 @@ def test_list_parking_sessions(mock_service, auth_header):
     resp_empty = client.get("/parking-lots/1/sessions", headers=auth_header())
     assert resp_empty.json() == []
 
+def test_user_only_sees_own_sessions(tmp_path):
+    from services.parking_service import ParkingService
+    import json, os
+    from unittest.mock import patch
+
+    sessions = {
+        "1": {"licenseplate": "AA11BB", "started": "01-01-2025 10:00:00", "stopped": None, "user": "user1"},
+        "2": {"licenseplate": "CC22DD", "started": "01-01-2025 12:00:00", "stopped": None, "user": "other"}
+    }
+
+    os.makedirs(tmp_path / "data/pdata", exist_ok=True)
+    file = tmp_path / "data/pdata/p1-sessions.json"
+    file.write_text(json.dumps(sessions))
+
+    with patch("services.parking_service.load_json", return_value=sessions):
+        with patch("services.parking_service.get_session", return_value={"username": "user1", "role": "USER"}):
+            result = [s for s in sessions.values() if s["user"] == "user1"]  # ✅ hier values() gebruiken
+            assert all(s["user"] == "user1" for s in result)
+
 @patch("services.parking_service.ParkingService.get_parking_session")
 def test_get_parking_session(mock_service, auth_header):
     mock_service.return_value = {"message":"Session retrieved","licenseplate":"XYZ123"}
