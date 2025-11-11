@@ -40,7 +40,7 @@ jobs:
     steps:
     - name: Test with pytest
       run: |
-        python -m pytest Tests -q  
+        coverage run -m pytest
     - name: Run code coverage
       run: |
         # Run coverage report
