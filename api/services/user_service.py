@@ -71,22 +71,22 @@ class UserService:
         """Delete a user by ID"""
         users = load_json('data/users.json')
         updated_users = [user for user in users if user.get('id') != user_id]
-
+        
         if len(updated_users) == len(users):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-
+        
         save_user_data(updated_users)
         return MessageResponse(message="User deleted successfully")
-
+    
     @staticmethod
     def update_user(user_id: str, user_data: UserRegister) -> MessageResponse:
         """Update user information"""
         users = load_json('data/users.json')
         user_found = False
-
+        
         for user in users:
             if user.get('id') == user_id:
                 user_found = True
@@ -97,13 +97,13 @@ class UserService:
                 if user_data.password:
                     user['password'] = UserService.hash_password(user_data.password)
                 break
-
+        
         if not user_found:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-
+        
         save_user_data(users)
         return MessageResponse(message="User updated successfully")
     
@@ -148,7 +148,6 @@ class UserService:
         users = load_json('data/users.json')
         for user in users:
             if user.get("username") == username:
-                # Return user without password for security
                 return {
                     'id': user.get('id'),
                     'username': user.get('username'),

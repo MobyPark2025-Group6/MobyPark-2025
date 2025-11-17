@@ -162,9 +162,11 @@ class ParkingService:
         session_user = get_session(token)
         if not session_user:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
+
         sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
         if session_user["role"] == "ADMIN":
             return sessions
+
         return [s for s in sessions if s["user"] == session_user["username"]]
 
     @staticmethod
@@ -172,14 +174,19 @@ class ParkingService:
         session_user = get_session(token)
         if not session_user:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
+
         sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+
         if session_id not in sessions:
             raise HTTPException(status_code=404, detail="Session not found")
+
         session = sessions[session_id]
+
         if session_user["role"] != "ADMIN" and session["user"] != session_user["username"]:
             raise HTTPException(status_code=403, detail="Access denied")
-        return session
 
+        return session
+    
     @staticmethod
     def delete_parking_lot(lot_id: str, token: Optional[str]):
         session_user = get_session(token)
@@ -187,9 +194,11 @@ class ParkingService:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
+
         parking_lots = load_parking_lot_data()
         if lot_id not in parking_lots:
             raise HTTPException(status_code=404, detail="Parking lot not found")
+
         del parking_lots[lot_id]
         save_parking_lot_data(parking_lots)
         return {"detail": "Parking lot deleted"}
@@ -201,9 +210,12 @@ class ParkingService:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
+
         sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+
         if not session_id.isnumeric() or session_id not in sessions:
             raise HTTPException(status_code=400, detail="Valid session ID required")
+
         del sessions[session_id]
         save_data(f"data/pdata/p{lot_id}-sessions.json", sessions)
         return {"detail": "Session deleted"}
