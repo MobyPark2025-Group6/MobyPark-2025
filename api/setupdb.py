@@ -130,19 +130,19 @@ def seed_db(cursor):
         "hash": "abc123"
     }
 
-    cursor.execute("SELECT id FROM payments WHERE payment_id = %s", (tx["payment_id"],))
+    cursor.execute("SELECT id FROM payments WHERE payment_id = %s", (tx["payment_id_id"],))
     if cursor.fetchone() is None:
         cursor.execute(
             """
             INSERT INTO payments
-            (payment_id, amount, initiator, processed_by, created_at, completed, coupled_to, hash)
+            (payment_id_id, amount, initiator, processed_by, created_at, completed, coupled_to, hash)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (tx["payment_id"], tx["amount"], tx["initiator"], tx["processed_by"], tx["created_at"], tx["completed"], tx["coupled_to"], tx["hash"])
+            (tx["payment_id_id"], tx["amount"], tx["initiator"], tx["processed_by"], tx["created_at"], tx["completed"], tx["coupled_to"], tx["hash"])
         )
-        print("Seeded payments:", tx["payment_id"])
+        print("Seeded payments:", tx["payment_id_id"])
     else:
-        print("Payment already present:", tx["payment_id"])
+        print("Payment already present:", tx["payment_id_id"])
 seed_db(cursor)
 
 
