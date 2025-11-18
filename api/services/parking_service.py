@@ -65,7 +65,8 @@ class ParkingService:
             "licenseplate": session_data.licenseplate,
             "started": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
             "stopped": None,
-            "user": session_user["username"]
+            "user": session_user["username"],
+            "price": 0 if session_user.get("hotel_guest") else None
         }
         
         # Add session with new ID
@@ -77,7 +78,8 @@ class ParkingService:
         
         return SessionResponse(
             message="Session started successfully",
-            licenseplate=session_data.licenseplate
+            licenseplate=session_data.licenseplate,
+            started=new_session["started"]
         )
     
     @staticmethod
@@ -113,7 +115,8 @@ class ParkingService:
         
         return SessionResponse(
             message="Session stopped successfully",
-            licenseplate=session_data.licenseplate
+            licenseplate=session_data.licenseplate,
+            stopped=sessions[session_id]["stopped"]
         )
     
     @staticmethod
