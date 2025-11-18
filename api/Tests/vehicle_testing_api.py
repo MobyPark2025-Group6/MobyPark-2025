@@ -11,10 +11,13 @@ import json
 import pprint
 # Mock data 
 mock_normal_user = {"username": "user1", "role": "USER"}
+mock_admin_user = {"username": "admin1", "role": "ADMIN"}
 
 mock_sessions_active = {
-    "1": {"licenseplate": "XYZ123", "started": "01-01-2025 10:00:00", "stopped": None, "user": "user1"}
+    "1": {"licenseplate": "XYZ123", "started": "01-01-2025 10:00:00", "stopped": None, "user": "user1"},
+    "2": {"licenseplate": "ABC123", "started": "02-04-2025 10:00:00", "stopped": None, "user": "user1"}
 }
+
 
 mock_user_vehicles = [
     {"id": "1", "user_id": "1", "license_plate": "76-ACB-7", "make": "BMW", "model": "308", "color": "Brown", "year": 2024, "created_at": "2024-04-13"},
@@ -114,56 +117,87 @@ def test_get_all_vehicles_for_user_mocked():
         mock_user_exists.assert_called_once_with("user1")
         mock_get_user_vehicles.assert_called_once_with("1")
 
-def test_get_vehicles_admin(self):
-        response = VehicleService.get_all_vehicles_admin_user(TestMobyPark.authorization,"cindy.leenders42")
-        assert isinstance(response,list)
-        assert len(response) >= 0
-        
+def test_get_vehicles_admin_mocked():
+    token = "admin-fake-token"
+    fake_response = [
+        {"id": "1", "user_id": "1", "license_plate": "AA-111-1"},
+        {"id": "2", "user_id": "2", "license_plate": "BB-222-2"}
+    ]
 
-def test_change_vehicle(self):
-       
-        response = VehicleService.ChangeVehicle(
-            TestMobyPark.authorization,
-            "1",
-            Vehicle(
-                id="1",
-                user_id="1",
-                license_plate="76-KQQ-7",
-                make="Peugeot",
-                model="308",
-                color="Brown",
-                year=2024,
-                created_at="2024-08-13"
-            )
+    with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("services.vehicle_service.VehicleService.get_all_vehicles_admin_user") as mock_admin_list:
 
-        )
-        
-        assert response["status"] == "Success"
-        assert "vehicle" in response
-        vehicle = response["vehicle"]
-        assert vehicle["model"] == "308"
-        assert vehicle["license_plate"] == "76-KQQ-7"
-        
-def test_create_vehicle(self):
-        vehicle_data = {
-            "license_plate" : "12-test-12",
-            "make": "test",
-        }
-        response = VehicleService.CreateVehicle( TestMobyPark.authorization, vehicle_data)
-        assert response["status"] == "Success"
+        mock_validate.return_value = {"id": "admin", "username": "admin1", "role": "ADMIN"}
+        mock_admin_list.return_value = fake_response
 
-def test_act_on_vehicle(self):
-        # Potentially arbirtary, the expected function of acting on a vehicle id might already be handled in parking_service
-        # vehicle_data = {
-        #     "license_plate" : "12-test-12",
-        #     "make": "test",
-        # }
-        # response = VehicleService.ActOnVehicle( TestMobyPark.authorization, vehicle_data)
-        # assert response["status"] == "Success"
-        pass
+        result = VehicleService.get_all_vehicles_admin_user(token, "some.user")
 
-def test_delete_vehicle(self):
-        vehicles = load_vehicle_data()
-        cur_vehicle = [v for v in vehicles if v["license_plate"] == "12-test-12" ][0]
-        response = VehicleService.DeleteVehicle(TestMobyPark.authorization, cur_vehicle['id'])
-        assert response['Status'] == "Deleted"
+        assert result == fake_response
+        mock_validate.assert_called_once_with(token)
+        mock_admin_list.assert_called_once_with(token, "some.user")
+
+
+def test_change_vehicle_mocked():
+    token = "fake-token"
+    vehicle_payload = Vehicle(
+        id="1",
+        user_id="1",
+        license_plate="76-KQQ-7",
+        make="Peugeot",
+        model="308",
+        color="Brown",
+        year=2024,
+        created_at="2024-08-13"
+    )
+
+    fake_response = {"status": "Success", "vehicle": vehicle_payload.__dict__}
+
+    with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("services.vehicle_service.VehicleService.ChangeVehicle") as mock_change:
+
+        mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
+        mock_change.return_value = fake_response
+
+        resp = VehicleService.ChangeVehicle(token, "1", vehicle_payload)
+
+        assert resp["status"] == "Success"
+        assert "vehicle" in resp
+        assert resp["vehicle"]["license_plate"] == "76-KQQ-7"
+        mock_validate.assert_called_once_with(token)
+        mock_change.assert_called_once_with(token, "1", vehicle_payload)
+
+
+def test_create_vehicle_mocked():
+    token = "fake-token"
+    vehicle_data = {"license_plate": "12-test-12", "make": "test"}
+    fake_response = {"status": "Success", "vehicle": {"id": "99", **vehicle_data}}
+
+    with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("services.vehicle_service.VehicleService.CreateVehicle") as mock_create:
+
+        mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
+        mock_create.return_value = fake_response
+
+        resp = VehicleService.CreateVehicle(token, vehicle_data)
+
+        assert resp["status"] == "Success"
+        assert resp["vehicle"]["license_plate"] == "12-test-12"
+        mock_validate.assert_called_once_with(token)
+        mock_create.assert_called_once_with(token, vehicle_data)
+
+
+def test_delete_vehicle_mocked():
+    token = "fake-token"
+    fake_vehicle_id = "99"
+
+    with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("services.vehicle_service.VehicleService.DeleteVehicle") as mock_delete:
+
+        mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
+        mock_delete.return_value = {"Status": "Deleted"}
+
+        resp = VehicleService.DeleteVehicle(token, fake_vehicle_id)
+
+        assert resp["Status"] == "Deleted"
+        mock_validate.assert_called_once_with(token)
+        mock_delete.assert_called_once_with(token, fake_vehicle_id)
