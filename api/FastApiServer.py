@@ -342,7 +342,7 @@ async def get_vehicles(
     """
     Acquire all vehicles from a user as an admin
     """
-    return VehicleService.get_all_vehicles_admin_user (authorization, user_name)
+    return VehicleService.get_all_vehicles (authorization, user_name)
 
 @app.get("/vehicles", response_model=SessionResponse)
 async def get_vehicles(
