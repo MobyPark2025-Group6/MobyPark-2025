@@ -70,6 +70,31 @@ def test_get_parking_lot(mock_service, auth_header):
     assert resp.status_code == 200
     assert resp.json()["parking_lot_id"] == "1"
 
+@patch("services.parking_service.ParkingService.validate_session_token")
+@patch("services.parking_service.load_parking_lot_data")
+@patch("services.parking_service.save_parking_lot_data")
+def test_admin_update_parking_lot(mock_save, mock_load, mock_validate):
+    # Mock admin user
+    mock_validate.return_value = {"username": "admin", "role": "ADMIN"}
+
+    # Mock bestaande parkeerplaats
+    mock_load.return_value = {
+        "1": {"name": "Lot1", "location": "Loc1", "capacity": 5, "hourly_rate": 2.0}
+    }
+
+    from services.parking_service import ParkingService
+
+    updates = {"name": "Lot1-updated", "capacity": 10}
+    result = ParkingService.update_parking_lot("1", updates, token="admintoken")
+
+    assert result["parking_lot_id"] == "1"
+    # Controleer dat save_data is aangeroepen
+    mock_save.assert_called_once()
+    updated_lot = mock_load.return_value["1"]
+    assert updated_lot["name"] == "Lot1-updated"
+    assert updated_lot["capacity"] == 10
+
+
 @patch("services.parking_service.ParkingService.delete_parking_lot")
 def test_delete_parking_lot(mock_service, auth_header):
     mock_service.return_value = {"detail":"Parking lot deleted"}
@@ -165,6 +190,20 @@ def test_admin_permissions(mock_save_data, mock_load_json, mock_save_lot, mock_l
     for resp, detail in ((resp1, "Parking lot deleted"), (resp2, "Session deleted")):
         assert resp.status_code == 200
         assert resp.json()["detail"] == detail
+
+@patch("services.parking_service.ParkingService.validate_session_token")
+def test_normal_user_cannot_update_lot(mock_validate):
+    # Mock normale user
+    mock_validate.return_value = {"username": "user1", "role": "USER"}
+
+    from services.parking_service import ParkingService
+    updates = {"name": "Lot1-updated"}
+
+    with pytest.raises(Exception) as exc:
+        ParkingService.update_parking_lot("1", updates, token="usertoken")
+    
+    assert "Access denied" in str(exc.value)
+
 
 # ---------------------------
 # Edge Cases / Errors

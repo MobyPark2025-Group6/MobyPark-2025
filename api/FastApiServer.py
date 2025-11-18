@@ -202,6 +202,13 @@ async def get_parking_session(
     """
     return ParkingService.get_parking_session(lot_id, session_id, authorization)
 
+@app.put("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
+async def update_parking_lot(lot_id: str, updates: dict, token: Optional[str] = Depends(get_token)):
+    """
+    Update parking lot details (Admin only)
+    """
+    return ParkingService.update_parking_lot(lot_id, updates, token)
+
 @app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
 async def delete_parking_lot(
     lot_id: str,
