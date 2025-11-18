@@ -1,13 +1,14 @@
 # test_parking_api_full.py
 import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 import pytest
 
-from FastApiServer import app
-from models.parking_models import SessionStart, SessionStop
+from api.FastApiServer import app
+from api.models.parking_models import SessionStart, SessionStop
 
 client = TestClient(app)
 
@@ -115,6 +116,27 @@ def test_delete_parking_session(mock_service, auth_header):
     resp = client.delete("/parking-lots/1/sessions/1", headers=auth_header())
     assert resp.status_code == 200
     assert resp.json()["detail"] == "Session deleted"
+
+@patch("services.parking_service.ParkingService.validate_session_token")
+@patch("services.parking_service.load_json")
+@patch("services.parking_service.save_data")
+def test_admin_update_session(mock_save, mock_load, mock_validate):
+    # Mock admin
+    mock_validate.return_value = {"username": "admin", "role": "ADMIN"}
+    
+    # Bestaande session
+    mock_load.return_value = {
+        "1": {"licenseplate": "XYZ123", "started": "01-01-2025 10:00:00", "stopped": None, "user": "user1"}
+    }
+
+    from services.parking_service import ParkingService
+
+    updates = {"stopped": "01-01-2025 12:00:00", "user": "user2"}
+    updated_session = ParkingService.update_parking_session("1", "1", updates, token="admintoken")
+
+    assert updated_session["stopped"] == "01-01-2025 12:00:00"
+    assert updated_session["user"] == "user2"
+
 
 # ---------------------------
 # Permission Tests
