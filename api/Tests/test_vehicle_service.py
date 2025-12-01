@@ -205,12 +205,32 @@ def test_create_vehicle_mocked():
     
 
 def test_delete_vehicle_mocked():
-    with patch("services.vehicle_service.VehicleService.check_for_liscense_id") as mock_liscenseid_check, \
-         patch("services.vehicle_service.VehicleService.check_for_parameters") as mock_param_check, \
-         patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
-         patch("services.vehicle_service.load_json") as mock_vehicle_load, \
-         patch("services.vehicle_service.save_vehicle_data") as mock_save : 
-            mock_vehicle_load.return_value = mock_user_vehicles
-            mock_param_check.return_value = None
-            mock_liscenseid_check.return_value = None
-    pass
+    token = "fake-token"
+    fake_vehicle_id = "1"
+
+    # initial vehicle list and expected remaining after delete
+    initial = list(mock_user_vehicles)
+    remaining = [v for v in initial if v["id"] != fake_vehicle_id]
+
+    with patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
+         patch("services.vehicle_service.load_vehicle_data") as mock_load, \
+         patch("services.vehicle_service.save_vehicle_data") as mock_save:
+
+        # First load returns the initial list, second load (after save) should return remaining
+        mock_load.side_effect = [initial, remaining]
+
+        mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
+        mock_check.return_value = None
+        mock_save.return_value = None
+
+        resp = VehicleService.DeleteVehicle(token, fake_vehicle_id)
+
+        assert resp["Status"] == "Deleted"
+        mock_validate.assert_called_once_with(token)
+        mock_check.assert_called_once_with(mock_validate.return_value, fake_vehicle_id)
+
+        # ensure save was called with the remaining list (no deleted vehicle)
+        mock_save.assert_called_once()
+        saved_list = mock_save.call_args[0][0]
+        assert all(v["id"] != fake_vehicle_id for v in saved_list)
