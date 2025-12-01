@@ -1,0 +1,40 @@
+Index: api/Tests/*_test.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import pytest\n\nfrom models.vehicle_models import Vehicle\nfrom storage_utils import load_vehicle_data,  save_vehicle_data\nfrom services.vehicle_service import VehicleService\nfrom services.user_service import *\nfrom models.user_models import * \nimport json\n\nauthorization = None \nclass TestMobyPark:\n\n    authorization = None \n    def test_authenticate_user(self):\n        credentials = UserLogin(username=\"cindy.leenders42\", password=\"password\")\n        response = UserService.authenticate_user(credentials)\n        TestMobyPark.authorization = response.session_token\n        assert response.message == \"User logged in successfully\"\n        assert isinstance(response.session_token, str)\n        assert len(response.session_token) > 0\n\n    def test_user_creation(self):\n        user_data = UserRegister(\n            username=\"testuser\",\n            password=\"testpassword\",\n            name=\"Test User\",\n            email=\"test.user@example.com\"\n        )\n        response = UserService.create_user(user_data)\n        assert response.message == \"User created successfully\"  \n\n    def test_user_read(self):\n        user = UserService.get_user_by_username(\"testuser\")\n        assert user is not None\n        # Print all attributes of the returned user object for debugging\n        if isinstance(user, dict):\n            print(json.dumps(user, indent=2, default=str))\n        else:\n            try:\n                attrs = vars(user)\n            except TypeError:\n                attrs = {k: getattr(user, k) for k in dir(user) if not k.startswith('_') and not callable(getattr(user, k))}\n            print(json.dumps(attrs, indent=2, default=str))\n        assert user[\"username\"] == \"testuser\"\n        assert user[\"name\"] == \"Test User\"\n        assert user[\"email\"] == \"test.user@example.com\"\n\n    def test_user_update(self):\n        user_data = User(\n            username=\"testuser\",\n            name=\"Updated User\",\n            email=\"updated.user@example.com\"\n        )\n        response = UserService.update_user(user_data)\n        assert response.message == \"User updated successfully\"\n\n    def test_user_deletion(self):\n        response = UserService.delete_user(\"testuser\")\n        assert response.message == \"User deleted successfully\"\n\n    def test_get_vehicle_id_reservations(self):\n        response = VehicleService.get_vehicle_reservations(TestMobyPark.authorization, \"1\") \n        assert response != None\n\n    def test_get_vehicle_id_history(self):\n        response = VehicleService.get_vehicle_history(TestMobyPark.authorization, \"1\") \n        assert response != None\n\n    def test_get_vehicles_username(self):\n        response = VehicleService.get_all_vehicles(TestMobyPark.authorization)\n        assert isinstance(response,list)\n        assert len(response) >= 0\n\n    def test_get_vehicles_admin(self):\n        response = VehicleService.get_all_vehicles_admin_user(TestMobyPark.authorization,\"cindy.leenders42\")\n        assert isinstance(response,list)\n        assert len(response) >= 0\n        \n\n    def test_change_vehicle(self):\n       \n        response = VehicleService.ChangeVehicle(\n            TestMobyPark.authorization,\n            \"1\",\n            Vehicle(\n                id=\"1\",\n                user_id=\"1\",\n                license_plate=\"76-KQQ-7\",\n                make=\"Peugeot\",\n                model=\"308\",\n                color=\"Brown\",\n                year=2024,\n                created_at=\"2024-08-13\"\n            )\n\n        )\n        \n        assert response[\"status\"] == \"Success\"\n        assert \"vehicle\" in response\n        vehicle = response[\"vehicle\"]\n        assert vehicle[\"model\"] == \"308\"\n        assert vehicle[\"license_plate\"] == \"76-KQQ-7\"\n        \n    def test_create_vehicle(self):\n        vehicle_data = {\n            \"license_plate\" : \"12-test-12\",\n            \"make\": \"test\",\n        }\n        response = VehicleService.CreateVehicle( TestMobyPark.authorization, vehicle_data)\n        assert response[\"status\"] == \"Success\"\n\n    def test_act_on_vehicle(self):\n        # Potentially arbirtary, the expected function of acting on a vehicle id might already be handled in parking_service\n        # vehicle_data = {\n        #     \"license_plate\" : \"12-test-12\",\n        #     \"make\": \"test\",\n        # }\n        # response = VehicleService.ActOnVehicle( TestMobyPark.authorization, vehicle_data)\n        # assert response[\"status\"] == \"Success\"\n        pass\n\n    def test_delete_vehicle(self):\n        vehicles = load_vehicle_data()\n        cur_vehicle = [v for v in vehicles if v[\"license_plate\"] == \"12-test-12\" ][0]\n        response = VehicleService.DeleteVehicle(TestMobyPark.authorization, cur_vehicle['id'])\n        assert response['Status'] == \"Deleted\"\n\nif __name__ == '__main__':\n    pytest.main()
+===================================================================
+diff --git a/api/Tests/*_test.py b/api/Tests/*_test.py
+--- a/api/Tests/*_test.py	(revision c87091f31c989a34f45859ec44648f411279eaa5)
++++ b/api/Tests/*_test.py	(date 1762783888221)
+@@ -1,5 +1,5 @@
+ import pytest
+-
++from unittest.mock import patch
+ from models.vehicle_models import Vehicle
+ from storage_utils import load_vehicle_data,  save_vehicle_data
+ from services.vehicle_service import VehicleService
+@@ -10,7 +10,24 @@
+ authorization = None 
+ class TestMobyPark:
+ 
++    # ---------------------------
++    # Mock Data
++    # ---------------------------
++    mock_admin_user = {"username": "admin", "role": "ADMIN"}
++    mock_normal_user = {"username": "user1", "role": "USER"}
++
++    mock_sessions_active = {
++    "1": {"licenseplate": "XYZ123", "started": "01-01-2025 10:00:00", "stopped": None, "user": "user1"}
++    }
++    mock_sessions_stopped = {
++        "1": {"licenseplate": "XYZ123", "started": "01-01-2025 10:00:00", "stopped": "01-01-2025 12:00:00", "user": "user1"}
++    }
++
++    mock_parking_lot = {"1": {"name": "Lot1", "location": "Loc1", "capacity": 5, "hourly_rate": 2.0}}
++    mock_parking_session = {"1": {"licenseplate": "ABC123", "started": "01-01-2025", "stopped": None, "user": "other_user"}}
++
+     authorization = None 
++    
+     def test_authenticate_user(self):
+         credentials = UserLogin(username="cindy.leenders42", password="password")
+         response = UserService.authenticate_user(credentials)

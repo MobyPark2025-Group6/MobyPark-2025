@@ -29,7 +29,6 @@ class VehicleService:
         uvehicles = [v for v in vehicles if v["user_id"] == id]
         return uvehicles
         
-    
     @staticmethod
     def checkForVehicle(session_user : User , Vid : str):
         """Check if the vehicle exists"""
@@ -40,8 +39,6 @@ class VehicleService:
                                 status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Not Found"
                         )
-        
-        
     @staticmethod
     def check_for_parameters(data):
         for field in ["make", "license_plate"]:
@@ -182,7 +179,7 @@ class VehicleService:
         user = session_user["username"]
         UserService.user_exists(user)
         user_vehicles = VehicleService.getUserVehicles(session_user['id'])
-        print(user_vehicles)
+
         return user_vehicles
 
     @staticmethod
@@ -210,5 +207,5 @@ class VehicleService:
         # self.send_header("Content-type", "application/json")
         # self.end_headers()
         # self.wfile.write(json.dumps([]).encode("utf-8"))
-        return
+        return []
         

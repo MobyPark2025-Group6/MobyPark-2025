@@ -188,6 +188,48 @@ class ParkingService:
         return session
     
     @staticmethod
+    def update_parking_lot(lot_id: str, updates: dict, token: Optional[str]):
+        """Update a parking lot (Admin only)"""
+        session_user = ParkingService.validate_session_token(token)
+        ParkingService.validate_admin_access(session_user)
+
+        parking_lots = load_parking_lot_data()
+        if lot_id not in parking_lots:
+            raise HTTPException(status_code=404, detail="Parking lot not found")
+
+        allowed_fields = ["name", "location", "capacity", "hourly_rate"]
+        for key in allowed_fields:
+            if key in updates:
+                parking_lots[lot_id][key] = updates[key]
+
+        save_parking_lot_data(parking_lots)
+        return {"message": "Parking lot updated successfully", "parking_lot_id": lot_id}
+
+
+    @staticmethod
+    def update_parking_session(lot_id: str, session_id: str, updates: dict, token: Optional[str]):
+        """Update a parking session (Admin only)"""
+        # Valideer token en admin access
+        session_user = ParkingService.validate_session_token(token)
+        ParkingService.validate_admin_access(session_user)
+
+        # Laad bestaande sessies
+        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        # Alleen toegestane velden updaten
+        allowed_fields = ["licenseplate", "started", "stopped", "user"]
+        for key in allowed_fields:
+            if key in updates:
+                sessions[session_id][key] = updates[key]
+
+        # Opslaan
+        save_data(f"data/pdata/p{lot_id}-sessions.json", sessions)
+
+        return sessions[session_id]
+
+    @staticmethod
     def delete_parking_lot(lot_id: str, token: Optional[str]):
         session_user = get_session(token)
         if not session_user:
