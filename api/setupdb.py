@@ -1,12 +1,16 @@
 import os
+
+from api.loaddb import load_data
 import mysql.connector
 
+
 # Configuration via environment variables with sensible defaults
-DB_NAME = os.environ.get("MYSQL_DATABASE", "mijn_database")
+
+DB_NAME = os.environ.get("MYSQL_DATABASE", "mobypark")
 DB_HOST = os.environ.get("MYSQL_HOST", "127.0.0.1")  # force TCP
-DB_PORT = int(os.environ.get("MYSQL_PORT", 3306))
-DB_USER = os.environ.get("MYSQL_USER", "root")
-DB_PASSWORD = os.environ.get("MYSQL_PASSWORD", "pass")
+DB_PORT = int(os.environ.get("MYSQL_PORT", 3307))
+DB_USER = os.environ.get("MYSQL_USER", "stilstaan")
+DB_PASSWORD = os.environ.get("MYSQL_PASSWORD", "stil")
 
 # 1. Connect without specifying a database (so we can create it)
 conn = mysql.connector.connect(
@@ -101,23 +105,42 @@ CREATE TABLE IF NOT EXISTS payments (
 """)
 
 def seed_db(cursor):
-    pl = {
-        "name": "Natuur Enschede Parking",
-        "location": "Beach/Recreation",
-        "capacity": 388,
-        "hourly_rate": 3.0,
-        "created_at": "2018-02-15"
-    }
+    pl_data = load_data.load_parkinglots()
+    rs_data = load_data.load_reservations()
+    vs_data = load_data.load_vehicles()
+    us_data = load_data.load_users()
 
-    cursor.execute("SELECT id FROM parking_lots WHERE name = %s", (pl["name"],))
-    if cursor.fetchone() is None:
+    # Seed parkinglots
+    for pl in pl_data:
         cursor.execute(
-            "INSERT INTO parking_lots (name, location, capacity, hourly_rate, created_at) VALUES (%s, %s, %s, %s, %s)",
-            (pl["name"], pl["location"], pl["capacity"], pl["hourly_rate"], pl["created_at"])
-        )
-        print("Seeded parking_lots:", pl["name"])
-    else:
-        print("Parking lot already present:", pl["name"])
+                "INSERT INTO parking_lots (name, location, capacity, hourly_rate, created_at) VALUES (%s, %s, %s, %s, %s)",
+                (pl["name"], pl["location"], pl["capacity"], pl["hourly_rate"], pl["created_at"])
+            )
+    print("Seeded parking_lots:", pl["name"])
+
+    # Seed reservations
+    for rs in rs_data:
+        cursor.execute(
+                "INSERT INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs["created_at"], rs["cost"])
+            )
+    print("Seeded reservations")
+
+    # Seed vehicles
+    for vs in vs_data:
+        cursor.execute(
+                "INSERT INTO vehicles (user_id, license_plate, make, model, color, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["created_at"])
+            )
+    print("Seeded vehicles")
+
+     # Seed users
+    for us in us_data:
+        cursor.execute(
+                "INSERT INTO users (username, password, name, email, phone, role, created_at, birth_year, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"], us["created_at"], us["birth_year"], us["active"])
+            )
+    print("Seeded users")
 
     tx = {
         "payment_id": "tx_0001",
