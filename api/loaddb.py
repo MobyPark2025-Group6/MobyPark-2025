@@ -1,24 +1,32 @@
 import json 
 import pathlib
 import os 
+from datetime import datetime
 
 class load_data :
+
+    def time_convert(time : str):
+        if not time:
+            return None 
+        return datetime.fromisoformat(time.replace("Z", "+00:00"))
+    
     def load_users():
         with open('../data/users.json', 'r') as file:
             data = json.load(file)
             rows = []
             for u in data:
-                rows.append((
-                    u.get('username'),
-                    u.get('password'),
-                    u.get('name'),
-                    u.get('email'),
-                    u.get('phone'),
-                    u.get('role'),
-                    u.get('created_at'),
-                    u.get('birth_year'),
-                    1 if u.get('active', True) else 0,
-                ))
+               
+                    rows.append({
+                            'username':u.get('username'),
+                            'password':u.get('password'),
+                            'name':u.get('name'),
+                            'email':u.get('email'),
+                            'phone':u.get('phone'),
+                            'role':u.get('role'),
+                            'created_at': load_data.time_convert(u.get('created_at')),
+                            'birth_year':u.get('birth_year'),
+                            'active':1 if u.get('active', True) else 0,
+                        })
 
             return rows
 
@@ -27,14 +35,14 @@ class load_data :
             data = json.load(file)
             rows = []
             for u in data:
-                rows.append((
-                    u.get('user_id'),
-                    u.get('license_plate'),
-                    u.get('make'),
-                    u.get('model'),
-                    u.get('color'),
-                    u.get('created_at')
-                ))
+                rows.append({
+                    'user_id':u.get('user_id'),
+                    'license_plate':u.get('license_plate'),
+                    'make':u.get('make'),
+                    'model':u.get('model'),
+                    'color':u.get('color'),
+                    'created_at':load_data.time_convert(u.get('created_at')),
+                })
             return rows
 
     def load_reservations():
@@ -42,15 +50,16 @@ class load_data :
             data = json.load(file)
             rows = []
             for u in data:
-                rows.append((
-                    u.get('user_id'),
-                    u.get('parking_lot_id'),
-                    u.get('vehicle_id'),
-                    u.get('start_time'),
-                    u.get('end_time'),
-                    u.get('created_at'),
-                    u.get('cost')
-                ))
+                rows.append({
+                   'user_id': u.get('user_id'),
+                   'parking_lot_id':u.get('parking_lot_id'),
+                   'vehicle_id': u.get('vehicle_id'),
+                   'start_time':load_data.time_convert(u.get('start_time')),
+                   'end_time': load_data.time_convert(u.get('end_time')),
+                   'status':u.get('status'),
+                   'created_at':load_data.time_convert(u.get('created_at')),
+                   'cost':u.get('cost')
+                })
 
             return rows
         
@@ -59,18 +68,18 @@ class load_data :
             data = json.load(file)
             rows = []
             for u in data:
-                rows.append((
-                    data[u].get('name'),
-                    data[u].get('location'),
-                    data[u].get('address'),
-                    data[u].get('capacity'),
-                    data[u].get('reserved'),
-                    data[u].get('tariff'),
-                    data[u].get('daytariff'),
-                    data[u].get('created_at'),
-                    data[u]['coordinates'].get('lat'),
-                    data[u]['coordinates'].get('lng')
-                ))
+                rows.append({
+                    'name': data[u].get('name'),
+                    'location':data[u].get('location'),
+                    'address':data[u].get('address'),
+                    'capacity':data[u].get('capacity'),
+                    'reserved':data[u].get('reserved'),
+                    'tariff':data[u].get('tariff'),
+                    'daytariff':data[u].get('daytariff'),
+                    'created_at': load_data.time_convert(data[u].get('created_at')),
+                    'lat':data[u]['coordinates'].get('lat'),
+                    'lng':data[u]['coordinates'].get('lng')
+                })
 
             return rows
     def load_parking_sessions():
@@ -96,4 +105,4 @@ class load_data :
         with open('../data/payments.json', 'r') as file:
             data = file.read()
             return data
-print(load_data.load_payments())
+# print(load_data.load_payments())

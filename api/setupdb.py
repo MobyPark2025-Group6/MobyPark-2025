@@ -1,6 +1,6 @@
 import os
 
-from api.loaddb import load_data
+from loaddb import load_data
 import mysql.connector
 
 
@@ -110,40 +110,47 @@ def seed_db(cursor):
     vs_data = load_data.load_vehicles()
     us_data = load_data.load_users()
 
+  # Seed users
+    for us in us_data:
+        cursor.execute(
+            """
+            INSERT IGNORE INTO users
+            (username, password, name, email, phone, role, created_at, birth_year, active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
+            us["created_at"], us["birth_year"], us["active"])
+        )
+    print("Seeded users (duplicates ignored)")
+
+    
     # Seed parkinglots
     for pl in pl_data:
         cursor.execute(
-                "INSERT INTO parking_lots (name, location, capacity, hourly_rate, created_at) VALUES (%s, %s, %s, %s, %s)",
-                (pl["name"], pl["location"], pl["capacity"], pl["hourly_rate"], pl["created_at"])
+                "INSERT IGNORE INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
+                (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
             )
     print("Seeded parking_lots:", pl["name"])
 
     # Seed reservations
     for rs in rs_data:
         cursor.execute(
-                "INSERT INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs["created_at"], rs["cost"])
+                "INSERT IGNORE INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
             )
     print("Seeded reservations")
 
     # Seed vehicles
     for vs in vs_data:
         cursor.execute(
-                "INSERT INTO vehicles (user_id, license_plate, make, model, color, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                "INSERT IGNORE INTO vehicles (user_id, license_plate, make, model, color, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
                 (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["created_at"])
             )
     print("Seeded vehicles")
 
-     # Seed users
-    for us in us_data:
-        cursor.execute(
-                "INSERT INTO users (username, password, name, email, phone, role, created_at, birth_year, active) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"], us["created_at"], us["birth_year"], us["active"])
-            )
-    print("Seeded users")
 
     tx = {
-        "payment_id": "tx_0001",
+        "transaction_id": "tx_0001",
         "amount": 0.00,
         "initiator": "system",
         "processed_by": "system",
@@ -153,19 +160,19 @@ def seed_db(cursor):
         "hash": "abc123"
     }
 
-    cursor.execute("SELECT id FROM payments WHERE payment_id = %s", (tx["payment_id_id"],))
+    cursor.execute("SELECT id FROM payments WHERE transaction_id = %s", (tx["transaction_id"],))
     if cursor.fetchone() is None:
         cursor.execute(
             """
-            INSERT INTO payments
-            (payment_id_id, amount, initiator, processed_by, created_at, completed, coupled_to, hash)
+            INSERT IGNORE INTO payments
+            (transaction_id, amount, initiator, processed_by, created_at, completed, coupled_to, hash)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (tx["payment_id_id"], tx["amount"], tx["initiator"], tx["processed_by"], tx["created_at"], tx["completed"], tx["coupled_to"], tx["hash"])
+            (tx["transaction_id"], tx["amount"], tx["initiator"], tx["processed_by"], tx["created_at"], tx["completed"], tx["coupled_to"], tx["hash"])
         )
-        print("Seeded payments:", tx["payment_id_id"])
+        print("Seeded payments:", tx["transaction_id"])
     else:
-        print("Payment already present:", tx["payment_id_id"])
+        print("Payment already present:", tx["transaction_id"])
 seed_db(cursor)
 
 
