@@ -4,7 +4,7 @@ import os
 
 class load_data :
     def load_users():
-        with open('data/users.json', 'r') as file:
+        with open('../data/users.json', 'r') as file:
             data = json.load(file)
             rows = []
             for u in data:
@@ -23,7 +23,7 @@ class load_data :
             return rows
 
     def load_vehicles():
-        with open('data/vehicles.json', 'r') as file:
+        with open('../data/vehicles.json', 'r') as file:
             data = json.load(file)
             rows = []
             for u in data:
@@ -38,7 +38,7 @@ class load_data :
             return rows
 
     def load_reservations():
-        with open('data/reservations.json', 'r') as file:
+        with open('../data/reservations.json', 'r') as file:
             data = json.load(file)
             rows = []
             for u in data:
@@ -55,7 +55,7 @@ class load_data :
             return rows
         
     def load_parkinglots():
-        with open('data/parking-lots.json', 'r') as file:
+        with open('../data/parking-lots.json', 'r') as file:
             data = json.load(file)
             rows = []
             for u in data:
@@ -74,7 +74,8 @@ class load_data :
 
             return rows
     def load_parking_sessions():
-        route = pathlib.Path('data/pdata')
+
+        route = pathlib.Path('../data/pdata')
         files = []
         for (root, dirs, file) in os.walk(route):
             for f in file:
@@ -82,7 +83,7 @@ class load_data :
                     files.append(f)
         files.sort(key = lambda f : int(f.replace("-sessions.json","").replace("p","")))
         for t in files:
-            with open(f'data/pdata/{t}', 'r') as file:
+            with open(f'../data/pdata/{t}', 'r') as file:
                 data = json.load(file)
                 rows = []
                 for u in data:
@@ -92,6 +93,7 @@ class load_data :
                 return rows
             
     def load_payments():
-        with open('data/payments.json', 'r') as file:
-            data = json.load(file)
+        with open('../data/payments.json', 'r') as file:
+            data = file.read()
             return data
+print(load_data.load_payments())
