@@ -27,7 +27,6 @@ class load_data :
                             'birth_year':u.get('birth_year'),
                             'active':1 if u.get('active', True) else 0,
                         })
-
             return rows
 
     def load_vehicles():
@@ -60,7 +59,6 @@ class load_data :
                    'created_at':load_data.time_convert(u.get('created_at')),
                    'cost':u.get('cost')
                 })
-
             return rows
         
     def load_parkinglots():
@@ -80,10 +78,9 @@ class load_data :
                     'lat':data[u]['coordinates'].get('lat'),
                     'lng':data[u]['coordinates'].get('lng')
                 })
-
             return rows
+        
     def load_parking_sessions():
-
         route = pathlib.Path('../data/pdata')
         files = []
         for (root, dirs, file) in os.walk(route):
@@ -102,7 +99,36 @@ class load_data :
                 return rows
             
     def load_payments():
-        with open('../data/payments.json', 'r') as file:
-            data = file.read()
-            return data
-# print(load_data.load_payments())
+        with open('../data/payments.json', 'r') as f:
+            txt = f.read()
+
+        # Try to recover everything before the corruption
+        try:
+            data = json.loads(txt)
+        except json.JSONDecodeError as e:
+            cut = e.pos
+            recovered = txt[:cut]
+
+            # Try to wrap it in a valid array
+            if recovered.rstrip().endswith('}'):
+                recovered += ']'
+
+            data = json.loads(recovered)
+            rows = []
+            for u in data:
+                rows.append({
+                    "transaction_id": u.get("transaction_id"),
+                    "amount":  u.get("amount"),
+                    "initiator":  u.get("initiator"),
+                    "processed_by":  u.get("processed_by"),
+                    "created_at": load_data.time_convert(u.get('created_at')),
+                    "completed": load_data.time_convert(u.get('completed')),
+                    "date":load_data.time_convert(u['t_data'].get('date')),
+                    "method":u['t_data'].get('method'),
+                    "issuer":u['t_data'].get('issuer'),
+                    "bank":u['t_data'].get('bank'),
+                    "hash": u.get("hash"),
+                    "session_id":u.get("session_id"),
+                    "parking_lot_id":u.get("parking_lot_id")
+                })
+            return rows
