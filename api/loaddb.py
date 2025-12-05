@@ -9,6 +9,10 @@ class load_data :
         if not time:
             return None 
         return datetime.fromisoformat(time.replace("Z", "+00:00"))
+    def payment_time_convert(time : str):
+        if not time:
+            return None 
+        return datetime.strptime(time[:19], '%d-%m-%Y %H:%M:%S')
     
     def load_users():
         with open('../data/users.json', 'r') as file:
@@ -112,23 +116,24 @@ class load_data :
             # Try to wrap it in a valid array
             if recovered.rstrip().endswith('}'):
                 recovered += ']'
-
+        
             data = json.loads(recovered)
             rows = []
             for u in data:
+               
                 rows.append({
-                    "transaction_id": u.get("transaction_id"),
+                    "transaction": u.get("transaction"),
                     "amount":  u.get("amount"),
                     "initiator":  u.get("initiator"),
-                    "processed_by":  u.get("processed_by"),
-                    "created_at": load_data.time_convert(u.get('created_at')),
-                    "completed": load_data.time_convert(u.get('completed')),
-                    "date":load_data.time_convert(u['t_data'].get('date')),
-                    "method":u['t_data'].get('method'),
-                    "issuer":u['t_data'].get('issuer'),
-                    "bank":u['t_data'].get('bank'),
+                    "created_at": load_data.payment_time_convert(u.get('created_at')),
+                    "completed": load_data.payment_time_convert(u.get('completed')),
+                    "date":load_data.time_convert(u["t_data"].get('date')),
+                    "method":u["t_data"].get('method'),
+                    "issuer":u["t_data"].get('issuer'),
+                    "bank":u["t_data"].get('bank'),
                     "hash": u.get("hash"),
                     "session_id":u.get("session_id"),
                     "parking_lot_id":u.get("parking_lot_id")
                 })
             return rows
+        

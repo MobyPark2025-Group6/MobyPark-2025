@@ -93,13 +93,16 @@ CREATE TABLE IF NOT EXISTS reservations (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS payments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    payment_id VARCHAR(255) NOT NULL UNIQUE,
+    transaction VARCHAR(255) NOT NULL UNIQUE,
     amount DECIMAL(12,2) DEFAULT 0,
     initiator VARCHAR(255),
-    processed_by VARCHAR(255),
+
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed DATETIME,
-    coupled_to VARCHAR(255),
+    date DATETIME,
+    method VARCHAR(255),
+    issuer VARCHAR(255),
+    bank VARCHAR(255),
     hash VARCHAR(255),
     session_id INT,
     parking_lot_id INT
@@ -155,19 +158,20 @@ def seed_db(cursor):
     for pay in lp:
         cursor.execute(
                 """
-                    INSERT IGNORE INTO payments (transaction_id, amount, initiator, processed_by, created_at, completed, date, method, issuer, bank, hash, session_id, parking_lot_id) 
-                    VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s, %s)
+                    INSERT IGNORE INTO payments (transaction, amount, initiator, created_at, completed, hash, date, method, issuer, bank, session_id, parking_lot_id) 
+                    VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s)
                 """,
-                    (pay["transaction_id"],
+                    (pay["transaction"],
                     pay["amount"],
                     pay["initiator"],
-                    pay["processed_by"],
                     pay["created_at"],
                     pay["completed"],
+                    pay["hash"],
+                    pay["date"],
                     pay["method"],
                     pay["issuer"],
                     pay["bank"],
-                    pay["hash"],
+                  
                     pay["session_id"],
                     pay["parking_lot_id"])
               
