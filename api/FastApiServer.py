@@ -8,6 +8,7 @@ from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, S
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from services.user_service import UserService
 from services.parking_service import ParkingService
+from services.reservation_service import ReservationService
 from services.vehicle_service import VehicleService
 from services.payment_service import PaymentService
 
@@ -374,7 +375,7 @@ async def change_vehicle(
         vehicle: Vehicle data to update (license_plate, name)
         authorization: Session token for authentication
     """
-    return VehicleService.ChangeVehicle(
+    return VehicleService.change_vehicle(
         authorization,
         vid,
         vehicle
@@ -392,7 +393,7 @@ async def create_vehicle(
         vehicle_data: Dictionary containing vehicle information (name, license_plate)
         authorization: Session token for authentication
     """
-    return VehicleService.CreateVehicle(authorization, vehicle_data)
+    return VehicleService.create_vehicle(authorization, vehicle_data)
 
 @app.post("/vehicles/{lid}/entry")
 async def act_on_vehicle(
@@ -414,7 +415,7 @@ async def delete_vehicle(
         vid: Vehicle ID to delete
         authorization: Session token for authentication
     """
-    return VehicleService.DeleteVehicle(authorization, vid)
+    return VehicleService.delete_vehicle(authorization, vid)
 
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])
@@ -505,15 +506,27 @@ async def register_vehicle():
     """Register a new vehicle (Coming Soon)"""
     return {"message": "Vehicle registration - Coming Soon"}
 
-@app.get("/reservations", tags=["Reservations"])
-async def get_reservations():
-    """Get user's parking reservations (Coming Soon)"""
-    return {"message": "Reservations endpoint - Coming Soon"}
+@app.get("/reservations/{res_id}", tags=["Reservations"])
+async def get_reservations(
+        res_id: str,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Get reservation details by reservation ID
+
+    Requires Bearer token in Authorization header.
+    """
+    return ReservationService.get_reservation(res_id, token)
 
 @app.post("/reservations", tags=["Reservations"])
-async def create_reservation():
-    """Create a new parking reservation (Coming Soon)"""
-    return {"message": "Reservation creation - Coming Soon"}
+async def create_reservation(
+        reservation_data: ReservationRegister,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Create a new reservation
+    
+    Requires Bearer token in Authorization header.
+    """
+    return ReservationService.create_reservation(reservation_data, token)
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)
