@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from datetime import date
 
 class UserRegister(BaseModel):
     username: str
@@ -16,9 +18,7 @@ class LoginResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
 
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from datetime import date
+
 
 class UserRegister(BaseModel):
     username: str

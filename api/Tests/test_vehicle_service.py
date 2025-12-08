@@ -162,7 +162,7 @@ def test_change_vehicle_mocked():
             {"id": "3", "user_id": "2", "license_plate": "76-QAU-7", "make": "CAR", "model": "213", "color": "Yellow", "year": 1800, "created_at": "2024-02-13"},
             {"id": "4", "user_id": "3", "license_plate": "76-PSL-7", "make": "Peugeot", "model": "3028", "color": "Red", "year": 2000, "created_at": "2024-01-13"}
         ]
-        resp = VehicleService.ChangeVehicle(token, "1", updated_vehicle_data)
+        resp = VehicleService.change_vehicle(token, "1", updated_vehicle_data)
         assert resp["status"] == "Success"
         assert updated_vehicle_data in mock_save.return_value
         mock_save.assert_called_once()
@@ -191,7 +191,7 @@ def test_create_vehicle_mocked():
 
             ]
 
-            resp = VehicleService.CreateVehicle(token, new_vehicle)
+            resp = VehicleService.create_vehicle(token, new_vehicle)
             assert resp["status"] == "Success"
             mock_validate.assert_called_once_with(token)
 
@@ -224,7 +224,7 @@ def test_delete_vehicle_mocked():
         mock_check.return_value = None
         mock_save.return_value = None
 
-        resp = VehicleService.DeleteVehicle(token, fake_vehicle_id)
+        resp = VehicleService.delete_vehicle(token, fake_vehicle_id)
 
         assert resp["Status"] == "Deleted"
         mock_validate.assert_called_once_with(token)

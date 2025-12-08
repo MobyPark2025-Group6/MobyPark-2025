@@ -225,20 +225,11 @@ async def delete_parking_session(
 
 
     lot_id: str,
-
-
     session_id: str,
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
 
-
     """Delete a specific parking session (Admin only)."""
-
-
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
 from fastapi import Depends
@@ -300,7 +291,19 @@ async def update_payment(transaction_id: str, update: PaymentUpdate, token: Opti
     except PermissionError:
         raise HTTPException(status_code=401, detail="Validation failed")
 
-
+@app.delete("/payments/{transaction_id}", response_model=dict, tags=["Payments"])
+async def update_payment(transaction_id: str, update: PaymentUpdate, token: Optional[str] = Depends(get_token)):
+    """Complete or validate a payment transaction"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    try:
+        updated_payment = PaymentService.update_payment(transaction_id, update)
+        return {"status": "Success", "payment": updated_payment}
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    except PermissionError:
+        raise HTTPException(status_code=401, detail="Validation failed")
 # Placeholder endpoints for future implementation
 
 @app.get("/vehicles", tags=["Vehicles"])

@@ -109,3 +109,10 @@ class PaymentService:
             raise PermissionError("Access denied")
         payments = load_payment_data()
         return [p for p in payments if p.get("initiator") == username]
+
+    def delete_payment(admin_session: dict, transaction_id: str) -> List[Dict]:
+        payments = load_payment_data()
+        if admin_session.get("role") != "ADMIN":
+            raise PermissionError("Access denied")
+        pts = [p for p in payments if p.get("transaction_id") != transaction_id]
+        return any(x["transaction_id"] == transaction_id for x in pts)
