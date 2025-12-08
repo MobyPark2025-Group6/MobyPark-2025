@@ -96,3 +96,4 @@ def load_vehicle_data():
 
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
+

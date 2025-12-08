@@ -304,17 +304,6 @@ async def update_payment(transaction_id: str, update: PaymentUpdate, token: Opti
         raise HTTPException(status_code=404, detail="Payment not found")
     except PermissionError:
         raise HTTPException(status_code=401, detail="Validation failed")
-# Placeholder endpoints for future implementation
-
-@app.get("/vehicles", tags=["Vehicles"])
-async def get_vehicles():
-    """Get user's registered vehicles (Coming Soon)"""
-    return {"message": "Vehicles endpoint - Coming Soon"}
-
-@app.post("/vehicles", tags=["Vehicles"])
-async def register_vehicle():
-    """Register a new vehicle (Coming Soon)"""
-    return {"message": "Vehicle registration - Coming Soon"}
 
 @app.get("/reservations/{uid}", tags=["Reservations"])
 async def get_reservations(

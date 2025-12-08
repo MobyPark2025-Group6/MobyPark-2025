@@ -7,6 +7,8 @@ from storage_utils import load_json
 from services.validation_service import ValidationService
 from storage_utils import load_vehicle_data, save_vehicle_data, load_parking_lot_data
 from services.user_service import UserService
+from loaddb import load_data
+import storage_utils
 class VehicleService:
 
     @staticmethod
@@ -22,7 +24,11 @@ class VehicleService:
         vehicles = load_vehicle_data()
         uvehicles = [v for v in vehicles if v["id"] == vid]
         return uvehicles
-    
+    @staticmethod 
+    def liscensce_plate_for_id(vid: str):
+        vehicles = load_vehicle_data()
+        return [v['liscense_plate'] for v in vehicles if v["id"] == vid]
+       
     @staticmethod
     def getUserVehicles(id : str):
         vehicles = load_vehicle_data()
@@ -199,7 +205,13 @@ class VehicleService:
         session_user = ValidationService.validate_session_token(token)
 
         VehicleService.checkForVehicle(session_user, vid)
-    
+
+        lp = VehicleService.liscensce_plate_for_id(vid)
+
+       
+        ssn = load_data.load_parking_sessions()
+        return [s for s in ssn if s["licenseplate"] == lp]
+
         # TODO In the old code, it returned nothing. For the 'refactor' it was decided to mostly copy over the old code with the new methods applied. This should be changed later
         # self.send_response(200)
         # self.send_header("Content-type", "application/json")

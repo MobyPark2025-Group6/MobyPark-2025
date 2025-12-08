@@ -91,16 +91,19 @@ class load_data :
             for f in file:
                 if '.json' in f:
                     files.append(f)
+
         files.sort(key = lambda f : int(f.replace("-sessions.json","").replace("p","")))
+
         for t in files:
             with open(f'../data/pdata/{t}', 'r') as file:
+                print(f"Opened file :{t}")
                 data = json.load(file)
                 rows = []
                 for u in data:
                     rows.append((
-                        ##
+                        data[u]
                     ))
-                return rows
+        return rows
             
     def load_payments():
         with open('../data/payments.json', 'r') as f:
@@ -136,4 +139,3 @@ class load_data :
                     "parking_lot_id":u.get("parking_lot_id")
                 })
             return rows
-        
