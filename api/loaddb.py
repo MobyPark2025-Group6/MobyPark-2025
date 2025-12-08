@@ -93,12 +93,12 @@ class load_data :
                     files.append(f)
 
         files.sort(key = lambda f : int(f.replace("-sessions.json","").replace("p","")))
-
+        rows = []
         for t in files:
             with open(f'../data/pdata/{t}', 'r') as file:
                 print(f"Opened file :{t}")
                 data = json.load(file)
-                rows = []
+                
                 for u in data:
                     rows.append((
                         data[u]

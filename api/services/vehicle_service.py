@@ -203,19 +203,7 @@ class VehicleService:
     def get_vehicle_history(token : str, vid : str): 
         """Get the vehicle history"""
         session_user = ValidationService.validate_session_token(token)
-
         VehicleService.checkForVehicle(session_user, vid)
-
         lp = VehicleService.liscensce_plate_for_id(vid)
-
-       
         ssn = load_data.load_parking_sessions()
         return [s for s in ssn if s["licenseplate"] == lp]
-
-        # TODO In the old code, it returned nothing. For the 'refactor' it was decided to mostly copy over the old code with the new methods applied. This should be changed later
-        # self.send_response(200)
-        # self.send_header("Content-type", "application/json")
-        # self.end_headers()
-        # self.wfile.write(json.dumps([]).encode("utf-8"))
-        return []
-        
