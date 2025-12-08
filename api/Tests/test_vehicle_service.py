@@ -94,7 +94,7 @@ def test_get_vehicle_id_history_mock(auth_header):
 
 
     with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
-         patch("load_data.load_parking_sessions") as mock_load, \
+         patch("services.vehicle_service.load_data.load_parking_sessions") as mock_load, \
          patch("services.vehicle_service.VehicleService.liscensce_plate_for_id") as mock_plate_load, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check :
         
