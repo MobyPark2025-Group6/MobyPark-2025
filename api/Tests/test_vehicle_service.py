@@ -78,14 +78,33 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
         mock_load_parking.assert_called_once()
 
 
+
+# @staticmethod
+#     def get_vehicle_history(token : str, vid : str): 
+#         """Get the vehicle history"""
+#         session_user = ValidationService.validate_session_token(token)
+#         VehicleService.checkForVehicle(session_user, vid)
+#         lp = VehicleService.liscensce_plate_for_id(vid)
+#         ssn = load_data.load_parking_sessions()
+#         return [s for s in ssn if s["licenseplate"] == lp]
+
 def test_get_vehicle_id_history_mock(auth_header):
     token = "fake-token-1"
     vid = "1"
 
 
     with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("load_data.load_parking_sessions") as mock_load, \
+         patch("services.vehicle_service.VehicleService.liscensce_plate_for_id") as mock_plate_load, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check :
         
+        mock_load.return_value = {
+                     "1":{"id":"1","parking_lot_id":"1","licenseplate":"JO-227-4","started":"2020-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"},
+                     "2":{"id":"1","parking_lot_id":"1","licenseplate":"JO-110-4","started":"2020-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"},
+                     "3":{"id":"1","parking_lot_id":"1","licenseplate":"76-ACB-7","started":"2020-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"}
+                     }
+        
+        mock_plate_load.return_value= "76-ACB-7"
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
         mock_check.return_value = None
 
