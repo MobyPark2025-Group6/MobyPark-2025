@@ -112,74 +112,73 @@ CREATE TABLE IF NOT EXISTS payments (
 )
 """)
 
+# TODO INSERT IGNORE SHOULD BE REPLACED WITH A WAY OF CHECKING FOR DUPLICATES
 def seed_db(cursor):
-    # pl_data = load_data.load_parkinglots()
-    # rs_data = load_data.load_reservations()
-    # vs_data = load_data.load_vehicles()
-    # us_data = load_data.load_users()
+    pl_data = load_data.load_parkinglots()
+    rs_data = load_data.load_reservations()
+    vs_data = load_data.load_vehicles()
+    us_data = load_data.load_users()
     lp = load_data.load_payments()
-  # Seed users
-    # for us in us_data:
-    #     cursor.execute(
-    #         """
-    #         INSERT IGNORE INTO users
-    #         (username, password, name, email, phone, role, created_at, birth_year, active)
-    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    #         """,
-    #         (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
-    #         us["created_at"], us["birth_year"], us["active"])
-    #     )
-    # print("Seeded users (duplicates ignored)")
+#   Seed users
+    for us in us_data:
+        cursor.execute(
+            """
+            INSERT IGNORE INTO users
+            (username, password, name, email, phone, role, created_at, birth_year, active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
+            us["created_at"], us["birth_year"], us["active"])
+        )
+    print("Seeded users (duplicates ignored)")
 
     
     # Seed parkinglots
-    # for pl in pl_data:
-    #     cursor.execute(
-    #             "INSERT IGNORE INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
-    #             (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
-    #         )
-    # print("Seeded parking_lots:", pl["name"])
+    for pl in pl_data:
+        cursor.execute(
+                "INSERT IGNORE INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
+                (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
+            )
+    print("Seeded parking_lots:", pl["name"])
 
-    # # Seed reservations
-    # for rs in rs_data:
-    #     cursor.execute(
-    #             "INSERT IGNORE INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-    #             (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
-    #         )
-    # print("Seeded reservations")
+    # Seed reservations
+    for rs in rs_data:
+        cursor.execute(
+                "INSERT IGNORE INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
+            )
+    print("Seeded reservations")
 
     # Seed vehicles
-    # for vs in vs_data:
-    #     cursor.execute(
-    #             "INSERT IGNORE INTO vehicles (user_id, license_plate, make, model, color, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-    #             (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["created_at"])
-    #         )
-    # print("Seeded vehicles")
+    for vs in vs_data:
+        cursor.execute(
+                "INSERT IGNORE INTO vehicles (user_id, license_plate, make, model, color, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["created_at"])
+            )
+    print("Seeded vehicles")
 
 
-     # Seed Payments
-    # for pay in lp:
-    #     cursor.execute(
-    #             """
-    #                 INSERT IGNORE INTO payments (transaction, amount, initiator, created_at, completed, hash, date, method, issuer, bank, session_id, parking_lot_id) 
-    #                 VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s)
-    #             """,
-    #                 (pay["transaction"],
-    #                 pay["amount"],
-    #                 pay["initiator"],
-    #                 pay["created_at"],
-    #                 pay["completed"],
-    #                 pay["hash"],
-    #                 pay["date"],
-    #                 pay["method"],
-    #                 pay["issuer"],
-    #                 pay["bank"],
-                  
-    #                 pay["session_id"],
-    #                 pay["parking_lot_id"])
-              
-    #         )
-    # print("Seeded payments")
+    #  Seed Payments
+    for pay in lp:
+        cursor.execute(
+                """
+                    INSERT IGNORE INTO payments (transaction, amount, initiator, created_at, completed, hash, date, method, issuer, bank, session_id, parking_lot_id) 
+                    VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s)
+                """,
+                    (pay["transaction"],
+                    pay["amount"],
+                    pay["initiator"],
+                    pay["created_at"],
+                    pay["completed"],
+                    pay["hash"],
+                    pay["date"],
+                    pay["method"],
+                    pay["issuer"],
+                    pay["bank"],
+                    pay["session_id"],
+                    pay["parking_lot_id"])
+            )
+    print("Seeded payments")
 seed_db(cursor)
 
 
