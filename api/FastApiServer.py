@@ -322,7 +322,7 @@ async def get_reservations(
     return ReservationService.get_reservations_list(uid, authorization)
 
 
-@app.post("/reservations/{reservation_info}", tags=["Reservations"])
+@app.post("/reservations", tags=["Reservations"])
 async def create_reservation(
     reservation_info : ReservationRegister,
     authorization: Annotated[Optional[str], Header()] = None
@@ -330,7 +330,8 @@ async def create_reservation(
     """
         Create a new parking reservation 
     """
-    return ReservationService.create_reservation(reservation_info,authorization)
+
+    return ReservationService.create_reservation(reservation_info, authorization)
 
 @app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
 async def get_vehicle_id_reservations(
