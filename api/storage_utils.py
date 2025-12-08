@@ -4,9 +4,12 @@ import csv
 def load_json(filename):
     try:
         with open(filename, 'r') as file:
-            return json.load(file)
+            data = json.load(file)
+            if isinstance(data, list):
+                return {str(i+1): v for i, v in enumerate(data)}
+            return data
     except FileNotFoundError:
-        return []
+        return {}
 
 def write_json(filename, data):
     with open(filename, 'w') as file:

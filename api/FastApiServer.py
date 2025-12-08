@@ -202,6 +202,13 @@ async def get_parking_session(
     """
     return ParkingService.get_parking_session(lot_id, session_id, authorization)
 
+@app.put("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
+async def update_parking_lot(lot_id: str, updates: dict, token: Optional[str] = Depends(get_token)):
+    """
+    Update parking lot details (Admin only)
+    """
+    return ParkingService.update_parking_lot(lot_id, updates, token)
+
 @app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
 async def delete_parking_lot(
     lot_id: str,
@@ -458,6 +465,16 @@ async def get_parking_session(
     Only Admins or the session owner can access.
     """
     return ParkingService.get_parking_session(lot_id, session_id, authorization)
+
+@app.put("/parking-lots/{lot_id}/sessions/{session_id}", response_model=SessionResponse, tags=["Parking Lots"])
+async def update_parking_session(
+    lot_id: str,
+    session_id: str,
+    updates: dict,  # JSON body met de updates
+    token: Optional[str] = Depends(get_token)
+):
+    """Update a parking session (Admin only)"""
+    return ParkingService.update_parking_session(lot_id, session_id, updates, token)
 
 @app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
 async def delete_parking_lot(

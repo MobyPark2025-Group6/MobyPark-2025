@@ -1,12 +1,16 @@
 import os
+
+from loaddb import load_data
 import mysql.connector
 
+
 # Configuration via environment variables with sensible defaults
-DB_NAME = os.environ.get("MYSQL_DATABASE", "mijn_database")
+
+DB_NAME = os.environ.get("MYSQL_DATABASE", "mobypark")
 DB_HOST = os.environ.get("MYSQL_HOST", "127.0.0.1")  # force TCP
-DB_PORT = int(os.environ.get("MYSQL_PORT", 3306))
-DB_USER = os.environ.get("MYSQL_USER", "root")
-DB_PASSWORD = os.environ.get("MYSQL_PASSWORD", "pass")
+DB_PORT = int(os.environ.get("MYSQL_PORT", 3307))
+DB_USER = os.environ.get("MYSQL_USER", "stilstaan")
+DB_PASSWORD = os.environ.get("MYSQL_PASSWORD", "stil")
 
 # 1. Connect without specifying a database (so we can create it)
 conn = mysql.connector.connect(
@@ -89,60 +93,93 @@ CREATE TABLE IF NOT EXISTS reservations (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS payments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    payment_id VARCHAR(255) NOT NULL UNIQUE,
+    transaction VARCHAR(255) NOT NULL UNIQUE,
     amount DECIMAL(12,2) DEFAULT 0,
     initiator VARCHAR(255),
-    processed_by VARCHAR(255),
+
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    completed DATETIME,
-    coupled_to VARCHAR(255),
-    hash VARCHAR(255)
+    completed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    method VARCHAR(255) NOT NULL,
+    issuer VARCHAR(255) NOT NULL,
+    bank VARCHAR(255) NOT NULL,
+    hash VARCHAR(255) NOT NULL,
+    session_id INT,
+    parking_lot_id INT,
+               
+    FOREIGN KEY (initiator) REFERENCES users(username) ON DELETE CASCADE,
+    FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
 )
 """)
 
 def seed_db(cursor):
-    pl = {
-        "name": "Natuur Enschede Parking",
-        "location": "Beach/Recreation",
-        "capacity": 388,
-        "hourly_rate": 3.0,
-        "created_at": "2018-02-15"
-    }
+    # pl_data = load_data.load_parkinglots()
+    # rs_data = load_data.load_reservations()
+    # vs_data = load_data.load_vehicles()
+    # us_data = load_data.load_users()
+    lp = load_data.load_payments()
+  # Seed users
+    # for us in us_data:
+    #     cursor.execute(
+    #         """
+    #         INSERT IGNORE INTO users
+    #         (username, password, name, email, phone, role, created_at, birth_year, active)
+    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    #         """,
+    #         (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
+    #         us["created_at"], us["birth_year"], us["active"])
+    #     )
+    # print("Seeded users (duplicates ignored)")
 
-    cursor.execute("SELECT id FROM parking_lots WHERE name = %s", (pl["name"],))
-    if cursor.fetchone() is None:
-        cursor.execute(
-            "INSERT INTO parking_lots (name, location, capacity, hourly_rate, created_at) VALUES (%s, %s, %s, %s, %s)",
-            (pl["name"], pl["location"], pl["capacity"], pl["hourly_rate"], pl["created_at"])
-        )
-        print("Seeded parking_lots:", pl["name"])
-    else:
-        print("Parking lot already present:", pl["name"])
+    
+    # Seed parkinglots
+    # for pl in pl_data:
+    #     cursor.execute(
+    #             "INSERT IGNORE INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
+    #             (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
+    #         )
+    # print("Seeded parking_lots:", pl["name"])
 
-    tx = {
-        "payment_id": "tx_0001",
-        "amount": 0.00,
-        "initiator": "system",
-        "processed_by": "system",
-        "created_at": "2025-01-01 00:00:00",
-        "completed": None,
-        "coupled_to": "none",
-        "hash": "abc123"
-    }
+    # # Seed reservations
+    # for rs in rs_data:
+    #     cursor.execute(
+    #             "INSERT IGNORE INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+    #             (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
+    #         )
+    # print("Seeded reservations")
 
-    cursor.execute("SELECT id FROM payments WHERE payment_id = %s", (tx["payment_id_id"],))
-    if cursor.fetchone() is None:
-        cursor.execute(
-            """
-            INSERT INTO payments
-            (payment_id_id, amount, initiator, processed_by, created_at, completed, coupled_to, hash)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (tx["payment_id_id"], tx["amount"], tx["initiator"], tx["processed_by"], tx["created_at"], tx["completed"], tx["coupled_to"], tx["hash"])
-        )
-        print("Seeded payments:", tx["payment_id_id"])
-    else:
-        print("Payment already present:", tx["payment_id_id"])
+    # Seed vehicles
+    # for vs in vs_data:
+    #     cursor.execute(
+    #             "INSERT IGNORE INTO vehicles (user_id, license_plate, make, model, color, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+    #             (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["created_at"])
+    #         )
+    # print("Seeded vehicles")
+
+
+     # Seed Payments
+    # for pay in lp:
+    #     cursor.execute(
+    #             """
+    #                 INSERT IGNORE INTO payments (transaction, amount, initiator, created_at, completed, hash, date, method, issuer, bank, session_id, parking_lot_id) 
+    #                 VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s)
+    #             """,
+    #                 (pay["transaction"],
+    #                 pay["amount"],
+    #                 pay["initiator"],
+    #                 pay["created_at"],
+    #                 pay["completed"],
+    #                 pay["hash"],
+    #                 pay["date"],
+    #                 pay["method"],
+    #                 pay["issuer"],
+    #                 pay["bank"],
+                  
+    #                 pay["session_id"],
+    #                 pay["parking_lot_id"])
+              
+    #         )
+    # print("Seeded payments")
 seed_db(cursor)
 
 

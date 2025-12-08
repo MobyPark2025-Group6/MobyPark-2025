@@ -49,6 +49,7 @@ class User(BaseModel):
     created_at: Optional[str] = None  # Using string to match your date format
     birth_year: Optional[int] = None
     active: Optional[bool] = True
+    hotel_guest: Optional[bool] = False
     # Note: password not included in response model for security
 
 class UserFull(BaseModel):
