@@ -96,9 +96,7 @@ class load_data :
         rows = []
         for t in files:
             with open(f'../data/pdata/{t}', 'r') as file:
-                print(f"Opened file :{t}")
                 data = json.load(file)
-                
                 for u in data:
                     rows.append((
                         data[u]
@@ -139,3 +137,7 @@ class load_data :
                     "parking_lot_id":u.get("parking_lot_id")
                 })
             return rows
+sessions = load_data.load_parking_sessions()
+t = [s for s in sessions if s["licenseplate"] == "JB-70-GKH"]
+print(sessions[0])
+print(t)

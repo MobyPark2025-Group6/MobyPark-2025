@@ -206,4 +206,5 @@ class VehicleService:
         VehicleService.checkForVehicle(session_user, vid)
         lp = VehicleService.liscensce_plate_for_id(vid)
         ssn = load_data.load_parking_sessions()
+        
         return [s for s in ssn if s["licenseplate"] == lp]
