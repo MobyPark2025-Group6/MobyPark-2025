@@ -7,6 +7,7 @@ from services.user_service import *
 from models.user_models import * 
 import json
 
+# TODO TO BE REMOVED
 authorization = None 
 class TestMobyPark:
 

@@ -6,11 +6,13 @@ from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
+from models.reservation_models import ReservationRegister
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.reservation_service import ReservationService
 from services.vehicle_service import VehicleService
 from services.payment_service import PaymentService
+
 
 # Define tags for API organization
 tags_metadata = [
@@ -311,15 +313,24 @@ async def register_vehicle():
     """Register a new vehicle (Coming Soon)"""
     return {"message": "Vehicle registration - Coming Soon"}
 
-@app.get("/reservations", tags=["Reservations"])
-async def get_reservations():
+@app.get("/reservations/{uid}", tags=["Reservations"])
+async def get_reservations(
+     uid : int,
+     authorization: Annotated[Optional[str], Header()] = None
+):
     """Get user's parking reservations (Coming Soon)"""
-    return {"message": "Reservations endpoint - Coming Soon"}
+    return ReservationService.get_reservations_list(uid, authorization)
 
-@app.post("/reservations", tags=["Reservations"])
-async def create_reservation():
-    """Create a new parking reservation (Coming Soon)"""
-    return {"message": "Reservation creation - Coming Soon"}
+
+@app.post("/reservations/{reservation_info}", tags=["Reservations"])
+async def create_reservation(
+    reservation_info : ReservationRegister,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+        Create a new parking reservation 
+    """
+    return ReservationService.create_reservation(reservation_info,authorization)
 
 @app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
 async def get_vehicle_id_reservations(
