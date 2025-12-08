@@ -98,11 +98,11 @@ def test_get_vehicle_id_history_mock(auth_header):
          patch("services.vehicle_service.VehicleService.liscensce_plate_for_id") as mock_plate_load, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check :
         
-        mock_load.return_value = {
+        mock_load.return_value = [
                      {"id":"1","parking_lot_id":"1","licenseplate":"JO-227-4","started":"2021-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"},
                      {"id":"2","parking_lot_id":"1","licenseplate":"JO-110-4","started":"2022-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"},
                      {"id":"3","parking_lot_id":"1","licenseplate":"76-ACB-7","started":"2023-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"}
-                     }
+                     ]
         
         mock_plate_load.return_value= "76-ACB-7"
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
