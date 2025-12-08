@@ -3,7 +3,7 @@ import sys, os
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from fastappi.testclient import TestClient
+from fastapi.testclient import TestClient
 from unittest.mock import patch
 import pytest
 
