@@ -137,7 +137,3 @@ class load_data :
                     "parking_lot_id":u.get("parking_lot_id")
                 })
             return rows
-sessions = load_data.load_parking_sessions()
-t = [s for s in sessions if s["licenseplate"] == "JB-70-GKH"]
-print(sessions[0])
-print(t)
