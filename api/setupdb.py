@@ -98,14 +98,17 @@ CREATE TABLE IF NOT EXISTS payments (
     initiator VARCHAR(255),
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    completed DATETIME,
-    date DATETIME,
-    method VARCHAR(255),
-    issuer VARCHAR(255),
-    bank VARCHAR(255),
-    hash VARCHAR(255),
+    completed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    method VARCHAR(255) NOT NULL,
+    issuer VARCHAR(255) NOT NULL,
+    bank VARCHAR(255) NOT NULL,
+    hash VARCHAR(255) NOT NULL,
     session_id INT,
-    parking_lot_id INT
+    parking_lot_id INT,
+               
+    FOREIGN KEY (initiator) REFERENCES users(username) ON DELETE CASCADE,
+    FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
 )
 """)
 
@@ -155,28 +158,28 @@ def seed_db(cursor):
 
 
      # Seed Payments
-    for pay in lp:
-        cursor.execute(
-                """
-                    INSERT IGNORE INTO payments (transaction, amount, initiator, created_at, completed, hash, date, method, issuer, bank, session_id, parking_lot_id) 
-                    VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s)
-                """,
-                    (pay["transaction"],
-                    pay["amount"],
-                    pay["initiator"],
-                    pay["created_at"],
-                    pay["completed"],
-                    pay["hash"],
-                    pay["date"],
-                    pay["method"],
-                    pay["issuer"],
-                    pay["bank"],
+    # for pay in lp:
+    #     cursor.execute(
+    #             """
+    #                 INSERT IGNORE INTO payments (transaction, amount, initiator, created_at, completed, hash, date, method, issuer, bank, session_id, parking_lot_id) 
+    #                 VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s, %s,%s, %s)
+    #             """,
+    #                 (pay["transaction"],
+    #                 pay["amount"],
+    #                 pay["initiator"],
+    #                 pay["created_at"],
+    #                 pay["completed"],
+    #                 pay["hash"],
+    #                 pay["date"],
+    #                 pay["method"],
+    #                 pay["issuer"],
+    #                 pay["bank"],
                   
-                    pay["session_id"],
-                    pay["parking_lot_id"])
+    #                 pay["session_id"],
+    #                 pay["parking_lot_id"])
               
-            )
-    print("Seeded payments")
+    #         )
+    # print("Seeded payments")
 seed_db(cursor)
 
 
