@@ -2,11 +2,27 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from storage_utils import load_json, save_data, load_parking_lot_data, save_parking_lot_data
-from session_manager import get_session
+from session_manager import add_session, get_session
 from models.parking_models import (
     ParkingLotCreate, SessionStart, SessionStop, 
     SessionResponse, ParkingLotResponse
 )
+
+# Setup system user voor automatische parkeerregistratie
+system_user = {
+    "id": "0",
+    "username": "system",
+    "role": "ADMIN",
+    "hotel_guest": False,
+    "active": True,
+    "created_at": "2025-12-09"
+}
+
+system_token = "system-token"
+
+# Voeg system user toe als hij nog niet bestaat
+if not get_session(system_token):
+    add_session(system_token, system_user)
 
 class ParkingService:
     @staticmethod
@@ -118,7 +134,30 @@ class ParkingService:
             licenseplate=session_data.licenseplate,
             stopped=sessions[session_id]["stopped"]
         )
-    
+
+    # -------------------------
+    # Auto system user parking
+    # -------------------------
+
+    @staticmethod
+    def auto_start_parking(lot_id: str, license_plate: str) -> SessionResponse:
+        """Start automatisch een parkeerregistratie voor system user"""
+        return ParkingService.start_parking_session(
+            lot_id,
+            SessionStart(licenseplate=license_plate),
+            system_token  # gebruikt de system user
+        )
+
+    @staticmethod
+    def auto_stop_parking(lot_id: str, license_plate: str) -> SessionResponse:
+        """Stop automatisch een parkeerregistratie voor system user"""
+        return ParkingService.stop_parking_session(
+            lot_id,
+            SessionStop(licenseplate=license_plate),
+            system_token
+        )
+
+
     @staticmethod
     def create_parking_lot(parking_lot_data: ParkingLotCreate, token: Optional[str]) -> ParkingLotResponse:
         """Create a new parking lot (Admin only)"""
