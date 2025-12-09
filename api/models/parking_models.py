@@ -17,6 +17,8 @@ class SessionStop(BaseModel):
 class SessionResponse(BaseModel):
     message: str
     licenseplate: str
+    started: Optional[str] = None
+    stopped: Optional[str] = None
 
 class ParkingLotResponse(BaseModel):
     message: str

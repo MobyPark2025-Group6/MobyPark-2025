@@ -6,10 +6,13 @@ from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
+from models.reservation_models import ReservationRegister
 from services.user_service import UserService
 from services.parking_service import ParkingService
+from services.reservation_service import ReservationService
 from services.vehicle_service import VehicleService
 from services.payment_service import PaymentService
+
 
 # Define tags for API organization
 tags_metadata = [
@@ -202,6 +205,13 @@ async def get_parking_session(
     """
     return ParkingService.get_parking_session(lot_id, session_id, authorization)
 
+@app.put("/parking-lots/{lot_id}", response_model=ParkingLotResponse)
+async def update_parking_lot(lot_id: str, updates: dict, token: Optional[str] = Depends(get_token)):
+    """
+    Update parking lot details (Admin only)
+    """
+    return ParkingService.update_parking_lot(lot_id, updates, token)
+
 @app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
 async def delete_parking_lot(
     lot_id: str,
@@ -215,20 +225,11 @@ async def delete_parking_session(
 
 
     lot_id: str,
-
-
     session_id: str,
-
-
     authorization: Annotated[Optional[str], Header()] = None
-
-
 ):
 
-
     """Delete a specific parking session (Admin only)."""
-
-
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
 from fastapi import Depends
@@ -290,28 +291,39 @@ async def update_payment(transaction_id: str, update: PaymentUpdate, token: Opti
     except PermissionError:
         raise HTTPException(status_code=401, detail="Validation failed")
 
+@app.delete("/payments/{transaction_id}", response_model=dict, tags=["Payments"])
+async def update_payment(transaction_id: str, update: PaymentUpdate, token: Optional[str] = Depends(get_token)):
+    """Complete or validate a payment transaction"""
+    session = PaymentService.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+    try:
+        updated_payment = PaymentService.update_payment(transaction_id, update)
+        return {"status": "Success", "payment": updated_payment}
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    except PermissionError:
+        raise HTTPException(status_code=401, detail="Validation failed")
 
-# Placeholder endpoints for future implementation
-
-@app.get("/vehicles", tags=["Vehicles"])
-async def get_vehicles():
-    """Get user's registered vehicles (Coming Soon)"""
-    return {"message": "Vehicles endpoint - Coming Soon"}
-
-@app.post("/vehicles", tags=["Vehicles"])
-async def register_vehicle():
-    """Register a new vehicle (Coming Soon)"""
-    return {"message": "Vehicle registration - Coming Soon"}
-
-@app.get("/reservations", tags=["Reservations"])
-async def get_reservations():
+@app.get("/reservations/{uid}", tags=["Reservations"])
+async def get_reservations(
+     uid : int,
+     authorization: Annotated[Optional[str], Header()] = None
+):
     """Get user's parking reservations (Coming Soon)"""
-    return {"message": "Reservations endpoint - Coming Soon"}
+    return ReservationService.get_reservations_list(uid, authorization)
+
 
 @app.post("/reservations", tags=["Reservations"])
-async def create_reservation():
-    """Create a new parking reservation (Coming Soon)"""
-    return {"message": "Reservation creation - Coming Soon"}
+async def create_reservation(
+    reservation_info : ReservationRegister,
+    authorization: Annotated[Optional[str], Header()] = None
+):
+    """
+        Create a new parking reservation 
+    """
+
+    return ReservationService.create_reservation(reservation_info, authorization)
 
 @app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
 async def get_vehicle_id_reservations(
@@ -342,7 +354,7 @@ async def get_vehicles(
     """
     Acquire all vehicles from a user as an admin
     """
-    return VehicleService.get_all_vehicles_admin_user (authorization, user_name)
+    return VehicleService.get_all_vehicles (authorization, user_name)
 
 @app.get("/vehicles", response_model=SessionResponse)
 async def get_vehicles(
@@ -459,6 +471,16 @@ async def get_parking_session(
     """
     return ParkingService.get_parking_session(lot_id, session_id, authorization)
 
+@app.put("/parking-lots/{lot_id}/sessions/{session_id}", response_model=SessionResponse, tags=["Parking Lots"])
+async def update_parking_session(
+    lot_id: str,
+    session_id: str,
+    updates: dict,  # JSON body met de updates
+    token: Optional[str] = Depends(get_token)
+):
+    """Update a parking session (Admin only)"""
+    return ParkingService.update_parking_session(lot_id, session_id, updates, token)
+
 @app.delete("/parking-lots/{lot_id}", status_code=status.HTTP_200_OK)
 async def delete_parking_lot(
     lot_id: str,
@@ -488,15 +510,27 @@ async def register_vehicle():
     """Register a new vehicle (Coming Soon)"""
     return {"message": "Vehicle registration - Coming Soon"}
 
-@app.get("/reservations", tags=["Reservations"])
-async def get_reservations():
-    """Get user's parking reservations (Coming Soon)"""
-    return {"message": "Reservations endpoint - Coming Soon"}
+@app.get("/reservations/{res_id}", tags=["Reservations"])
+async def get_reservations(
+        res_id: str,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Get reservation details by reservation ID
+
+    Requires Bearer token in Authorization header.
+    """
+    return ReservationService.get_reservation(res_id, token)
 
 @app.post("/reservations", tags=["Reservations"])
-async def create_reservation():
-    """Create a new parking reservation (Coming Soon)"""
-    return {"message": "Reservation creation - Coming Soon"}
+async def create_reservation(
+        reservation_data: ReservationRegister,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Create a new reservation
+    
+    Requires Bearer token in Authorization header.
+    """
+    return ReservationService.create_reservation(reservation_data, token)
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)

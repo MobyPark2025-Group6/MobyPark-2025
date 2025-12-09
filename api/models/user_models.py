@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from datetime import date
 
 class UserRegister(BaseModel):
     username: str
@@ -16,9 +18,7 @@ class LoginResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
 
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from datetime import date
+
 
 class UserRegister(BaseModel):
     username: str
@@ -49,6 +49,7 @@ class User(BaseModel):
     created_at: Optional[str] = None  # Using string to match your date format
     birth_year: Optional[int] = None
     active: Optional[bool] = True
+    hotel_guest: Optional[bool] = False
     # Note: password not included in response model for security
 
 class UserFull(BaseModel):

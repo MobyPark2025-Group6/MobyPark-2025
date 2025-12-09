@@ -2,11 +2,13 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from models.vehicle_models import Vehicle
 from models.user_models import User
-
+from typing import Optional
 from storage_utils import load_json
 from services.validation_service import ValidationService
 from storage_utils import load_vehicle_data, save_vehicle_data, load_parking_lot_data
 from services.user_service import UserService
+from loaddb import load_data
+import storage_utils
 class VehicleService:
 
     @staticmethod
@@ -22,14 +24,17 @@ class VehicleService:
         vehicles = load_vehicle_data()
         uvehicles = [v for v in vehicles if v["id"] == vid]
         return uvehicles
-    
+    @staticmethod 
+    def liscensce_plate_for_id(vid: str):
+        vehicles = load_vehicle_data()
+        return [v['liscense_plate'] for v in vehicles if v["id"] == vid]
+       
     @staticmethod
     def getUserVehicles(id : str):
         vehicles = load_vehicle_data()
         uvehicles = [v for v in vehicles if v["user_id"] == id]
         return uvehicles
         
-    
     @staticmethod
     def checkForVehicle(session_user : User , Vid : str):
         """Check if the vehicle exists"""
@@ -40,8 +45,6 @@ class VehicleService:
                                 status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Not Found"
                         )
-        
-        
     @staticmethod
     def check_for_parameters(data):
         for field in ["make", "license_plate"]:
@@ -82,8 +85,10 @@ class VehicleService:
             "user_id": session_user["id"],
             "license_plate": data["license_plate"],
             "make": data["make"],
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "model":data["model"],
+            "color":data["color"],
+            "year":data["year"],
+            "created_at": datetime.now().isoformat()
         }
 
         vehicles.append(new_vehicle)
@@ -137,12 +142,8 @@ class VehicleService:
                     from dataclasses import asdict
                     NewData = asdict(NewData)    
 
-        
         vehicles[index] = NewData
-
-  
         save_vehicle_data(vehicles)
-
         return {"status": "Success", "vehicle": vehicles[index]}
 
        
@@ -162,28 +163,28 @@ class VehicleService:
         if all(v.get("license_plate") != cur_vehicle['license_plate'] for v in updated_vehicles) :
              return {"Status" : "Deleted"}
         return {"Status" : "Not Deleted"}
-    #Get
-    @staticmethod
-
-    def get_all_vehicles_admin_user(token : str, user_name : str): 
-        """Admin vehicle lookup for a user"""
-        if ValidationService.check_valid_admin(ValidationService.validate_session_token(token)):
-            user = user_name
-            UserService.user_exists(user)
-            return VehicleService.getUserVehicles==(user)
-        return 
-         
     
+    # Method for retrieving vehicles, if the user_name parameter is not None the user needs to be an admin
     @staticmethod
-    def get_all_vehicles(token : str): 
-        """Get all user vehicles """
-        print("Get all vehicles from a user ")
+    def get_all_vehicles(token: str, user_name: Optional[str] = None): 
+        """Admin vehicle lookup for a user"""
         session_user = ValidationService.validate_session_token(token)
-        user = session_user["username"]
-        UserService.user_exists(user)
-        user_vehicles = VehicleService.getUserVehicles(session_user['id'])
-        print(user_vehicles)
-        return user_vehicles
+        target_user = None
+        # find the target user by username
+        if user_name : 
+            target_user = UserService.user_exists(user_name)
+            if not target_user:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+            # require admin privileges
+        
+            if not ValidationService.check_valid_admin(session_user):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
+            # return vehicles for the target user's id
+            return VehicleService.getUserVehicles(target_user["id"])
+        # A search for the users own vehicles 
+        else:
+            return VehicleService.getUserVehicles(session_user["id"])
 
     @staticmethod
     def get_vehicle_reservations(token : str, vid : str): 
@@ -202,13 +203,8 @@ class VehicleService:
     def get_vehicle_history(token : str, vid : str): 
         """Get the vehicle history"""
         session_user = ValidationService.validate_session_token(token)
-
         VehicleService.checkForVehicle(session_user, vid)
-    
-        # TODO In the old code, it returned nothing. For the 'refactor' it was decided to mostly copy over the old code with the new methods applied. This should be changed later
-        # self.send_response(200)
-        # self.send_header("Content-type", "application/json")
-        # self.end_headers()
-        # self.wfile.write(json.dumps([]).encode("utf-8"))
-        return
+        lp = VehicleService.liscensce_plate_for_id(vid)
+        ssn = load_data.load_parking_sessions()
         
+        return [s for s in ssn if s["licenseplate"] == lp]
