@@ -1,5 +1,25 @@
 import json
 import csv
+import os
+
+from loaddb import load_data
+import mysql.connector
+import datetime 
+def get_db_connection():
+    return mysql.connector.connect(
+        host=os.environ.get("MYSQL_HOST", "127.0.0.1"),
+        port=int(os.environ.get("MYSQL_PORT", 3307)),
+        user=os.environ.get("MYSQL_USER", "stilstaan"),
+        password=os.environ.get("MYSQL_PASSWORD", "stil"),
+        database=os.environ.get("MYSQL_DATABASE", "mobypark"),
+    )
+def normalize_row(row):
+    for key, value in row.items():
+        if isinstance(value, datetime.datetime):
+            row[key] = value.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            row[key] = str(value)
+    return row
 
 def load_json(filename):
     try:
@@ -61,8 +81,19 @@ def load_data(filename):
     else:
         return None
 
+
 def load_user_data():
-    return load_data('data/users.json')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True) 
+    
+    cursor.execute("SELECT * FROM users")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    users= [normalize_row(row) for row in rows]
+
+    return users
+
 
 def save_user_data(data):
     save_data('data/users.json', data)
@@ -96,4 +127,5 @@ def load_vehicle_data():
 
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
+
 

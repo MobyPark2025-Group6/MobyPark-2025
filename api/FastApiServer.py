@@ -325,7 +325,7 @@ async def create_reservation(
 
     return ReservationService.create_reservation(reservation_info, authorization)
 
-@app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
+@app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_reservations(
     vehicle_id : str,
     authorization: Annotated[Optional[str], Header()] = None
@@ -336,7 +336,7 @@ async def get_vehicle_id_reservations(
     """
     return VehicleService.get_vehicle_reservations(authorization, vehicle_id)
 
-@app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse)
+@app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_history(
     vehicle_id : str,
     authorization: Annotated[Optional[str], Header()] = None
@@ -346,7 +346,7 @@ async def get_vehicle_id_history(
     """
     return  VehicleService.get_vehicle_history(authorization, vehicle_id) 
 
-@app.get("/vehicles/{user_name}", response_model=SessionResponse)
+@app.get("/vehicles/{user_name}", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicles(
     user_name : str,
     authorization: Annotated[Optional[str], Header()] = None
@@ -356,7 +356,7 @@ async def get_vehicles(
     """
     return VehicleService.get_all_vehicles (authorization, user_name)
 
-@app.get("/vehicles", response_model=SessionResponse)
+@app.get("/vehicles", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicles(
 
     authorization: Annotated[Optional[str], Header()] = None
@@ -365,7 +365,7 @@ async def get_vehicles(
     Acquire all vehicles from the user
     """
     return VehicleService.get_all_vehicles(authorization)
-@app.put("/vehicles/{vid}")
+@app.put("/vehicles/{vid}", tags=["Vehicles"])
 async def change_vehicle(
     vid: str,
     vehicle: Vehicle,
@@ -385,7 +385,7 @@ async def change_vehicle(
         vehicle
     )
 
-@app.post("/vehicles")
+@app.post("/vehicles", tags=["Vehicles"])
 async def create_vehicle(
     vehicle_data: dict,
     authorization: Annotated[Optional[str], Header()] = None
@@ -399,7 +399,7 @@ async def create_vehicle(
     """
     return VehicleService.create_vehicle(authorization, vehicle_data)
 
-@app.post("/vehicles/{lid}/entry")
+@app.post("/vehicles/{lid}/entry", tags=["Vehicles"])
 async def act_on_vehicle(
     lid: str,
     authorization: str = Header(None, alias="Authorization")
@@ -407,7 +407,7 @@ async def act_on_vehicle(
     """Act on a vehicle (e.g., parking lot entry)"""
     return VehicleService.ActOnVehicle(authorization, lid)
 
-@app.delete("/vehicles/{vid}")
+@app.delete("/vehicles/{vid}", tags=["Vehicles"])
 async def delete_vehicle(
     vid: str,
     authorization: Annotated[Optional[str], Header()] = None

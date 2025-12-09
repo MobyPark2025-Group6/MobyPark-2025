@@ -19,7 +19,6 @@ class MessageResponse(BaseModel):
     message: str
 
 
-
 class UserRegister(BaseModel):
     username: str
     password: str
