@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
-from storage_utils import load_json, save_data, load_reservation_data, save_reservation_data
+from storage_utils import load_json, save_data, load_data_db_table, save_reservation_data
 from models.reservation_models import ReservationRegister
 
 class ReservationService:
@@ -24,7 +24,7 @@ class ReservationService:
                 reservation_data.user_id = session_user["id"]
 
         # Load existing reservations
-        reservations = load_reservation_data()
+        reservations = load_data_db_table("reservations")
 
         # Create new reservation entry
         new_reservation = {
@@ -65,7 +65,7 @@ class ReservationService:
                     detail="Access denied"
                 )
 
-        reservations = load_reservation_data()
+        reservations = load_data_db_table("reservations")
 
         user_reservations = [res for res in reservations if res["user_id"] == user_id]
         return {"reservations": user_reservations}
@@ -76,7 +76,7 @@ class ReservationService:
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
 
-        reservations = load_reservation_data()
+        reservations = load_data_db_table("reservations")
         reservation = next((res for res in reservations if res["id"] == res_id), None)
 
         if not reservation:

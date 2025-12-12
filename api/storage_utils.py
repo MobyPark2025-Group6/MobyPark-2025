@@ -4,6 +4,7 @@ import os
 
 from loaddb import load_data
 import mysql.connector
+
 import datetime 
 def get_db_connection():
     return mysql.connector.connect(
@@ -80,19 +81,20 @@ def load_data(filename):
         return load_text(filename)
     else:
         return None
-
-
-def load_user_data():
+    
+#Grabs the data from table for a given name
+#Handles the following : 
+#   vehicles, users, parking_lots, payments (TODO), reservations, sessions (TODO), 
+def load_data_db_table(tablename):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True) 
     
-    cursor.execute("SELECT * FROM users")
+    cursor.execute(f"SELECT * FROM {tablename}")
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-    users= [normalize_row(row) for row in rows]
-
-    return users
+    content = [normalize_row(row) for row in rows]
+    return content
 
 
 def save_user_data(data):
@@ -104,14 +106,19 @@ def load_parking_lot_data():
 def save_parking_lot_data(data):
     save_data('data/parking-lots.json', data)
 
-def load_reservation_data():
-    return load_data('data/reservations.json')
-
 def save_reservation_data(data):
     save_data('data/reservations.json', data)
 
 def load_payment_data():
-    return load_data('data/payments.json')
+    # conn = get_db_connection()
+    # cursor = conn.cursor(dictionary=True) 
+    # cursor.execute("SELECT * FROM payments")
+    # rows = cursor.fetchall()
+    # cursor.close()
+    # conn.close()
+    # pys = [normalize_row(row) for row in rows]
+    # return pys
+    return load_json("data/payments")
 
 def save_payment_data(data):
     save_data('data/payments.json', data)
@@ -122,10 +129,6 @@ def load_discounts_data():
 def save_discounts_data(data):
     save_data('data/discounts.csv', data)
 
-def load_vehicle_data():
-    return load_data('data/vehicles.json')
-
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
-
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from storage_utils import load_json, save_data, load_parking_lot_data, save_parking_lot_data
+from storage_utils import  save_data, save_parking_lot_data, load_data_db_table, load_json
 from session_manager import get_session
 from models.parking_models import (
     ParkingLotCreate, SessionStart, SessionStop, 
@@ -127,7 +127,7 @@ class ParkingService:
         # Validate admin access
         ParkingService.validate_admin_access(session_user)        
         # Load existing parking lots
-        parking_lots = load_parking_lot_data()        
+        parking_lots = load_data_db_table("parking_lots")        
         # Create new parking lot ID
         new_lot_id = str(len(parking_lots) + 1)
         # Add new parking lot
@@ -147,12 +147,12 @@ class ParkingService:
     @staticmethod
     def list_parking_lots(token: Optional[str]):
         # Load and optionally filter data
-        parking_lots = load_parking_lot_data()
+        parking_lots = load_data_db_table("parking_lots")
         return parking_lots
 
     @staticmethod
     def get_parking_lot(lot_id: str, token: Optional[str]):
-        parking_lots = load_parking_lot_data()
+        parking_lots = load_data_db_table("parking_lots")
         if lot_id not in parking_lots:
             raise HTTPException(status_code=404, detail="Parking lot not found")
         return parking_lots[lot_id]
@@ -193,7 +193,7 @@ class ParkingService:
         session_user = ParkingService.validate_session_token(token)
         ParkingService.validate_admin_access(session_user)
 
-        parking_lots = load_parking_lot_data()
+        parking_lots = load_data_db_table("parking_lots")
         if lot_id not in parking_lots:
             raise HTTPException(status_code=404, detail="Parking lot not found")
 
@@ -237,7 +237,7 @@ class ParkingService:
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
 
-        parking_lots = load_parking_lot_data()
+        parking_lots = load_data_db_table("parking_lots")
         if lot_id not in parking_lots:
             raise HTTPException(status_code=404, detail="Parking lot not found")
 

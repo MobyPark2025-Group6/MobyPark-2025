@@ -5,34 +5,42 @@ from models.user_models import User
 from typing import Optional
 from storage_utils import load_json
 from services.validation_service import ValidationService
-from storage_utils import load_vehicle_data, save_vehicle_data, load_parking_lot_data
+from storage_utils import load_data_db_table, save_vehicle_data
 from services.user_service import UserService
 from loaddb import load_data
-import storage_utils
-class VehicleService:
 
+
+class VehicleService:
     @staticmethod
     def getUserVehicleID(session_user : User ):
         """getUserVehicleIDs"""
-        vehicles = load_vehicle_data()
+        vehicles = load_data_db_table("vehicles")
         uvehicles = [v['id'] for v in vehicles if v['user_id'] == session_user['id']]
         return uvehicles
     
     @staticmethod
     def getUserVehicle(session_user : User, vid :str ):
         """getUserVehicle"""
-        vehicles = load_vehicle_data()
+        vehicles = load_data_db_table("vehicles")
         uvehicles = [v for v in vehicles if v["id"] == vid]
         return uvehicles
+        
     @staticmethod 
     def liscensce_plate_for_id(vid: str):
-        vehicles = load_vehicle_data()
+        vehicles = load_data_db_table("vehicles")
         return [v['liscense_plate'] for v in vehicles if v["id"] == vid]
        
     @staticmethod
-    def getUserVehicles(id : str):
-        vehicles = load_vehicle_data()
+    def getUserVehicles(username : str, token):
+        print("Get u vehicles")
+        ValidationService.validate_session_token(token)
+        vehicles = load_data_db_table("vehicles")
+    
+        id = UserService.get_user_by_username(username)['id']
+
         uvehicles = [v for v in vehicles if v["user_id"] == id]
+        print("User vehicles:")
+        print(uvehicles)
         return uvehicles
         
     @staticmethod
@@ -57,7 +65,7 @@ class VehicleService:
     
     @staticmethod
     def check_for_liscense_id(lid, session_user):
-        vehicles = load_vehicle_data()
+        vehicles = load_data_db_table("vehicles")
         # Extract ALL license plates from the system and normalize them (remove dashes)
         vehicle_lids = [v["license_plate"] for v in vehicles]
         
@@ -75,7 +83,7 @@ class VehicleService:
         session_user = ValidationService.validate_session_token(token)
         VehicleService.check_for_parameters(data)
 
-        vehicles = load_json("data/vehicles.json")
+        vehicles = load_data_db_table("vehicles")
 
         lid = data["license_plate"].replace("-", "")
         VehicleService.check_for_liscense_id(lid, session_user)
@@ -103,7 +111,7 @@ class VehicleService:
         # VehicleService.check_for_parameters(data)
         
         # lid = data["license_plate"].replace("-", "")
-        # vehicles = load_vehicle_data()
+        # vehicles = load_data_db_table("vehicles")
         # if not "parkinglot" in data :
         #     raise HTTPException(
         #         status_code=status.HTTP_400_BAD_REQUEST,
@@ -121,7 +129,7 @@ class VehicleService:
 
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
-        vehicles = load_vehicle_data()
+        vehicles = load_data_db_table("vehicles")
         index = None
         for i, v in enumerate(vehicles):
             if v["id"] == vid and v["user_id"] == session_user["id"]:
@@ -151,7 +159,7 @@ class VehicleService:
     #Delete
     @staticmethod
     def delete_vehicle(token : str , vid : str) :
-        vehicles = load_vehicle_data()
+        vehicles = load_data_db_table("vehicles")
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
         cur_vehicle = [v for v in vehicles if v['id'] == vid][0]
@@ -159,7 +167,7 @@ class VehicleService:
         remaining = [v for v in vehicles if v.get("license_plate") != cur_vehicle['license_plate']]
         save_vehicle_data(remaining)
 
-        updated_vehicles = load_vehicle_data()
+        updated_vehicles = load_data_db_table("vehicles")
         if all(v.get("license_plate") != cur_vehicle['license_plate'] for v in updated_vehicles) :
              return {"Status" : "Deleted"}
         return {"Status" : "Not Deleted"}
@@ -192,7 +200,7 @@ class VehicleService:
         session_user = ValidationService.validate_session_token(token)
         
         VehicleService.checkForVehicle(session_user, vid)
-        reservations = load_parking_lot_data()
+        reservations = load_data_db_table("reservations")
         vehicle_reservations = [r for r in reservations if r['vehicle_id'] == vid]
         if not vehicle_reservations:
             raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="No reservations")

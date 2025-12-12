@@ -113,7 +113,7 @@ async def get_user_vehicles(
     Requires Bearer token in Authorization header.
     Users can only access their own vehicle list unless they have ADMIN role.
     """
-    return UserService.get_user_vehicles(username, token)
+    return VehicleService.getUserVehicles(username, token)
 
 # Parking Lot Management Endpoints
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])
@@ -231,8 +231,6 @@ async def delete_parking_session(
 
     """Delete a specific parking session (Admin only)."""
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
-
-from fastapi import Depends
 
 @app.get("/payments", response_model=List[PaymentOut], tags=["Payments"])
 async def get_payments(token: Optional[str] = Depends(get_token)):
