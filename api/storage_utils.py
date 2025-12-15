@@ -151,6 +151,31 @@ def save_discounts_data(data):
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
 
+# def change_data(table,values,condition):
+#     columns = ", ".join(values.keys())
+#     placeholders = ", ".join(["%s"] * len(values))
+#     values = tuple(values)
+#     sql = f"""
+#                 UPDATE {table}
+#                 SET 
+
+#                 WHERE {condition}
+
+#             """
+    
+def create_data(Table, values):
+
+    columns = ", ".join(values.keys())
+    placeholders = ", ".join(["%s"] * len(values))
+    values = tuple(values)
+
+    sql = f"""
+            INSERT INTO {Table} ({columns})
+            VALUES ({placeholders})
+        """
+  
+    cursor.execute(sql, values)
+
 def delete_data(item, Row, table):
         sql =   f"""
                 DELETE FROM {table} 
@@ -161,24 +186,7 @@ def delete_data(item, Row, table):
 class save_vehicle:
 
     def create_vehicle(vehicle_data):
-        u_id,lp,make,model,color,year,c, = vehicle_data
-        sql = """
-                    INSERT INTO
-                    (user_id, license_plate, make, model, color, year, year)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-              """
-        values = (
-            u_id,    # parking_lot_id
-            lp,      # licenseplate
-            make,    # started
-            model,   # stopped
-            color,   # user
-            year,    # duration_minutes
-            c,       # cost
-       
-        )
-        cursor.execute(sql, values)
-
+        create_data("Vehicles", vehicle_data)
   
     def change_vehicle(vehicle_data):
         u_id,lp,make,model,color,year,c,id = vehicle_data
@@ -255,3 +263,13 @@ class save_reservation:
 
     def delete_reservation(rsv_data):
         delete_data("reservations",id)
+
+create_data("vehicles",  {
+                        "user_id": 1,
+                        "license_plate": "license_plate",
+                        "make": "make",
+                        "model":"model",
+                        "color":"color",
+                        "year":"Year",
+                        "created_at": "DatetimeNow"
+                    })
