@@ -14,6 +14,10 @@ def get_db_connection():
         password=os.environ.get("MYSQL_PASSWORD", "stil"),
         database=os.environ.get("MYSQL_DATABASE", "mobypark"),
     )
+conn = get_db_connection()
+cursor = conn.cursor(dictionary=True) 
+
+
 def normalize_row(row):
     for key, value in row.items():
         if isinstance(value, datetime.datetime):
@@ -132,3 +136,74 @@ def save_discounts_data(data):
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
 
+
+class save_vehicle:
+
+    def create_vehicle(vehicle_data):
+        u_id,lp,make,model,color,year,c, = vehicle_data
+        sql = """
+                    INSERT INTO
+                    (user_id, license_plate, make, model, color, year, year)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+              """
+        values = (
+            u_id,    # parking_lot_id
+            lp,      # licenseplate
+            make,    # started
+            model,   # stopped
+            color,   # user
+            year,    # duration_minutes
+            c,       # cost
+       
+        )
+        cursor.execute(sql, values)
+
+  
+    def change_vehicle(vehicle_data):
+        u_id,lp,make,model,color,year,c, = vehicle_data
+        sql = """
+                UPDATE vehicles
+                SET user_id = '%s', 
+                license_plate = '%s', 
+                make = '%s',
+                model ='%s',
+                color='%s',
+                year='%s',
+                year='%s',
+
+            """
+        values = (
+            pli,   # parking_lot_id
+            lp,    # licenseplate
+            st,    # started
+            stp,   # stopped
+            user,  # user
+            dur,   # duration_minutes
+            cost,  # cost
+            pmnt,  # payment_status
+            id
+        )
+        cursor.execute(sql, values)
+        
+    def delete_vehicle(id):
+        sql =   """
+                DELETE FROM vehicles 
+                WHERE id='%s';
+                """
+        cursor.execute(sql,id)
+        pass
+
+class save_payment:
+    pass
+
+class save_user:
+    pass
+
+class save_parking_lot:
+    pass
+
+class save_discount:
+    pass
+
+class save_reservation:
+    pass

@@ -180,6 +180,3 @@ class load_data :
 # # for i in payments:
 # #     if i['transaction'] or i['amount'] or i['issuer'] or ['session_id']== None :
 # #         print(i)
-
-print(len(load_data.load_payments()))
-print(4370256)

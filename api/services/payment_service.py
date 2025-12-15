@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Optional, List, Dict
 from session_calculator import generate_payment_hash, generate_transaction_validation_hash
-from storage_utils import load_json, save_payment_data
+from storage_utils import load_data_db_table, save_payment_data
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from services.validation_service import ValidationService
 class PaymentService:
@@ -38,7 +38,7 @@ class PaymentService:
     # --------------------------
 
     def create_payment(payment: PaymentCreate, session_user: dict) -> Dict:
-        payments = load_json("data/payments.json")
+        payments = load_data_db_table("payments")
         transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
 
         new_payment = {
@@ -55,7 +55,7 @@ class PaymentService:
 
 
     def refund_payment(payment: PaymentRefund, session_user: dict) -> Dict:
-        payments = load_json("data/payments.json")
+        payments = load_data_db_table("payments")
         transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
 
         refund_entry = {
@@ -73,7 +73,7 @@ class PaymentService:
 
 
     def update_payment(transaction_id: str, update: PaymentUpdate) -> Dict:
-        payments = load_json("data/payments.json")
+        payments = load_data_db_table("payments")
         payment = next((p for p in payments if p["transaction"] == transaction_id), None)
 
         if not payment:
@@ -88,7 +88,7 @@ class PaymentService:
 
 
     def get_user_payments(username: str) -> List[Dict]:
-        payments = load_json("data/payments.json")
+        payments = load_data_db_table("payments")
         print(len(payments))
         while True:
             for p in payments:
@@ -101,11 +101,11 @@ class PaymentService:
     def get_all_user_payments(admin_session: dict, username: str) -> List[Dict]:
         if admin_session.get("role") != "ADMIN":
             raise PermissionError("Access denied")
-        payments = load_json("data/payments.json")
+        payments = load_data_db_table("payments")
         return [p for p in payments if p.get("initiator") == username]
 
     def delete_payment(admin_session: dict, transaction_id: str) -> List[Dict]:
-        payments = load_json("data/payments.json")
+        payments = load_data_db_table("payments")
         if admin_session.get("role") != "ADMIN":
             raise PermissionError("Access denied")
         pts = [p for p in payments if p.get("transaction_id") != transaction_id]

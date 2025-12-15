@@ -5,7 +5,7 @@ from models.user_models import User
 from typing import Optional
 from storage_utils import load_json
 from services.validation_service import ValidationService
-from storage_utils import load_data_db_table, save_vehicle_data
+from storage_utils import load_data_db_table, save_vehicle
 from services.user_service import UserService
 from loaddb import load_data
 
@@ -83,13 +83,10 @@ class VehicleService:
         session_user = ValidationService.validate_session_token(token)
         VehicleService.check_for_parameters(data)
 
-        vehicles = load_data_db_table("vehicles")
-
         lid = data["license_plate"].replace("-", "")
         VehicleService.check_for_liscense_id(lid, session_user)
 
         new_vehicle = {
-            "id": len(vehicles) + 1, 
             "user_id": session_user["id"],
             "license_plate": data["license_plate"],
             "make": data["make"],
@@ -98,30 +95,9 @@ class VehicleService:
             "year":data["year"],
             "created_at": datetime.now().isoformat()
         }
-
-        vehicles.append(new_vehicle)
-
-        save_vehicle_data(vehicles)
+        
+        save_vehicle.create_vehicle(new_vehicle)
         return {"status": "Success", "vehicle": data}
-
-    @staticmethod
-    def ActOnVehicle(token : str, data : dict) :
-        #Potentially arbirtary, the expected function of acting on a vehicle id might already be handled in parking_service
-        # session_user = ValidationService.validate_session_token(token)
-        # VehicleService.check_for_parameters(data)
-        
-        # lid = data["license_plate"].replace("-", "")
-        # vehicles = load_data_db_table("vehicles")
-        # if not "parkinglot" in data :
-        #     raise HTTPException(
-        #         status_code=status.HTTP_400_BAD_REQUEST,
-        #         detail={"error": "Require field missing", "field": "parkinglot"}
-        #     )
-        # not VehicleService.check_for_liscense_id(lid, session_user)
-        # return {"status": "Accepted", "vehicle": vehicles[session_user["username"]][lid]}
-        pass
-        
- 
 
     #Put 
     @staticmethod
@@ -139,7 +115,6 @@ class VehicleService:
         if index is None:
             raise ValueError(f"Vehicle with id {vid} not found for user {session_user['username']}")
 
-    
         if not isinstance(NewData, dict):
             try:
                 NewData = NewData.model_dump() 
@@ -150,8 +125,7 @@ class VehicleService:
                     from dataclasses import asdict
                     NewData = asdict(NewData)    
 
-        vehicles[index] = NewData
-        save_vehicle_data(vehicles)
+        save_vehicle.change_vehicle(NewData)
         return {"status": "Success", "vehicle": vehicles[index]}
 
        
@@ -164,11 +138,10 @@ class VehicleService:
         VehicleService.checkForVehicle(session_user, vid)
         cur_vehicle = [v for v in vehicles if v['id'] == vid][0]
 
-        remaining = [v for v in vehicles if v.get("license_plate") != cur_vehicle['license_plate']]
-        save_vehicle_data(remaining)
+        save_vehicle.delete_vehicle(cur_vehicle['id'])
 
         updated_vehicles = load_data_db_table("vehicles")
-        if all(v.get("license_plate") != cur_vehicle['license_plate'] for v in updated_vehicles) :
+        if all(v.get("id") != cur_vehicle['id'] for v in updated_vehicles) :
              return {"Status" : "Deleted"}
         return {"Status" : "Not Deleted"}
     
