@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from storage_utils import  save_data, save_parking_lot_data, load_data_db_table, load_json
+from storage_utils import  save_data, save_parking_lot_data, load_data_db_table, load_json, delete_data
 from session_manager import get_session
 from models.parking_models import (
     ParkingLotCreate, SessionStart, SessionStop, 
@@ -236,13 +236,12 @@ class ParkingService:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
-
-        parking_lots = load_data_db_table("parking_lots")
-        if lot_id not in parking_lots:
-            raise HTTPException(status_code=404, detail="Parking lot not found")
-
-        del parking_lots[lot_id]
-        save_parking_lot_data(parking_lots)
+        # TODO Removable?
+        # parking_lots = load_data_db_table("parking_lots")
+        # if lot_id not in parking_lots:
+        #     raise HTTPException(status_code=404, detail="Parking lot not found")
+        delete_data(lot_id,'id',"parking_lots")
+  
         return {"detail": "Parking lot deleted"}
 
     @staticmethod
@@ -253,11 +252,12 @@ class ParkingService:
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
 
-        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+        # TODO Removable?
+        # sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
 
-        if not session_id.isnumeric() or session_id not in sessions:
-            raise HTTPException(status_code=400, detail="Valid session ID required")
+        # if not session_id.isnumeric() or session_id not in sessions:
+        #     raise HTTPException(status_code=400, detail="Valid session ID required")
+        delete_data(session_id,'id',"parking_sessions")
 
-        del sessions[session_id]
-        save_data(f"data/pdata/p{lot_id}-sessions.json", sessions)
+
         return {"detail": "Session deleted"}

@@ -53,6 +53,7 @@ security = HTTPBearer(auto_error=False)
 def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[str]:
     """Extract token from Authorization header"""
     if credentials:
+        print(credentials)
         return credentials.credentials
     return None
 
@@ -326,49 +327,37 @@ async def create_reservation(
 @app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_reservations(
     vehicle_id : str,
-    authorization: Annotated[Optional[str], Header()] = None
+    token: Optional[str] = Depends(get_token)):
     
-):
+
     """
-    Acquire all reservations for a vehicle ID (currently none functional)
+    Acquire all reservations for a vehicle ID 
     """
-    return VehicleService.get_vehicle_reservations(authorization, vehicle_id)
+    return VehicleService.get_vehicle_reservations(token, vehicle_id)
 
 @app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_history(
     vehicle_id : str,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Acquire all history for a vehicle by ID (currently none functional)
     """
-    return  VehicleService.get_vehicle_history(authorization, vehicle_id) 
+    return  VehicleService.get_vehicle_history(token, vehicle_id) 
 
 @app.get("/vehicles/{user_name}", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicles(
     user_name : str,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Acquire all vehicles from a user as an admin
     """
-    return VehicleService.get_all_vehicles (authorization, user_name)
+    return VehicleService.get_all_vehicles (token, user_name)
 
-@app.get("/vehicles", response_model=SessionResponse, tags=["Vehicles"])
-async def get_vehicles(
-
-    authorization: Annotated[Optional[str], Header()] = None
-):
-    """
-    Acquire all vehicles from the user
-    """
-    return VehicleService.get_all_vehicles(authorization)
 @app.put("/vehicles/{vid}", tags=["Vehicles"])
 async def change_vehicle(
     vid: str,
     vehicle: Vehicle,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Change/update a vehicle's information.
     
@@ -378,7 +367,7 @@ async def change_vehicle(
         authorization: Session token for authentication
     """
     return VehicleService.change_vehicle(
-        authorization,
+        token,
         vid,
         vehicle
     )
@@ -386,8 +375,7 @@ async def change_vehicle(
 @app.post("/vehicles", tags=["Vehicles"])
 async def create_vehicle(
     vehicle_data: dict,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Create a new vehicle
     
@@ -395,21 +383,12 @@ async def create_vehicle(
         vehicle_data: Dictionary containing vehicle information (name, license_plate)
         authorization: Session token for authentication
     """
-    return VehicleService.create_vehicle(authorization, vehicle_data)
-
-@app.post("/vehicles/{lid}/entry", tags=["Vehicles"])
-async def act_on_vehicle(
-    lid: str,
-    authorization: str = Header(None, alias="Authorization")
-):
-    """Act on a vehicle (e.g., parking lot entry)"""
-    return VehicleService.ActOnVehicle(authorization, lid)
+    return VehicleService.create_vehicle(token, vehicle_data)
 
 @app.delete("/vehicles/{vid}", tags=["Vehicles"])
 async def delete_vehicle(
     vid: str,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Delete a vehicle
     
@@ -417,7 +396,7 @@ async def delete_vehicle(
         vid: Vehicle ID to delete
         authorization: Session token for authentication
     """
-    return VehicleService.delete_vehicle(authorization, vid)
+    return VehicleService.delete_vehicle(token, vid)
 
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])
@@ -497,16 +476,6 @@ async def delete_parking_session(
     """Delete a specific parking session (Admin only)."""
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
-# Placeholder endpoints for future implementation
-@app.get("/vehicles", tags=["Vehicles"])
-async def get_vehicles():
-    """Get user's registered vehicles (Coming Soon)"""
-    return {"message": "Vehicles endpoint - Coming Soon"}
-
-@app.post("/vehicles", tags=["Vehicles"])
-async def register_vehicle():
-    """Register a new vehicle (Coming Soon)"""
-    return {"message": "Vehicle registration - Coming Soon"}
 
 @app.get("/reservations/{res_id}", tags=["Reservations"])
 async def get_reservations(

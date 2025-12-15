@@ -5,7 +5,7 @@ from models.user_models import User
 from typing import Optional
 from storage_utils import load_json
 from services.validation_service import ValidationService
-from storage_utils import load_data_db_table, save_vehicle
+from storage_utils import load_data_db_table,get_item_db, save_vehicle, delete_data
 from services.user_service import UserService
 from loaddb import load_data
 
@@ -14,9 +14,12 @@ class VehicleService:
     @staticmethod
     def getUserVehicleID(session_user : User ):
         """getUserVehicleIDs"""
-        vehicles = load_data_db_table("vehicles")
-        uvehicles = [v['id'] for v in vehicles if v['user_id'] == session_user['id']]
-        return uvehicles
+        # From Vehicles get all for where the user_id == session user_id
+        uvehicles = get_item_db('user_id',session_user['id'],"vehicles")
+ 
+        id_only = [v['id'] for v in uvehicles]
+        return id_only
+        
     
     @staticmethod
     def getUserVehicle(session_user : User, vid :str ):
@@ -28,19 +31,18 @@ class VehicleService:
     @staticmethod 
     def liscensce_plate_for_id(vid: str):
         vehicles = load_data_db_table("vehicles")
-        return [v['liscense_plate'] for v in vehicles if v["id"] == vid]
+        return [v['license_plate'] for v in vehicles if v["id"] == vid]
        
     @staticmethod
     def getUserVehicles(username : str, token):
-        print("Get u vehicles")
+
         ValidationService.validate_session_token(token)
         vehicles = load_data_db_table("vehicles")
     
         id = UserService.get_user_by_username(username)['id']
 
         uvehicles = [v for v in vehicles if v["user_id"] == id]
-        print("User vehicles:")
-        print(uvehicles)
+      
         return uvehicles
         
     @staticmethod
@@ -64,7 +66,7 @@ class VehicleService:
         return
     
     @staticmethod
-    def check_for_liscense_id(lid, session_user):
+    def check_for_liscense_id(lid):
         vehicles = load_data_db_table("vehicles")
         # Extract ALL license plates from the system and normalize them (remove dashes)
         vehicle_lids = [v["license_plate"] for v in vehicles]
@@ -138,7 +140,7 @@ class VehicleService:
         VehicleService.checkForVehicle(session_user, vid)
         cur_vehicle = [v for v in vehicles if v['id'] == vid][0]
 
-        save_vehicle.delete_vehicle(cur_vehicle['id'])
+        delete_data(id,"vehicles")
 
         updated_vehicles = load_data_db_table("vehicles")
         if all(v.get("id") != cur_vehicle['id'] for v in updated_vehicles) :
@@ -173,8 +175,7 @@ class VehicleService:
         session_user = ValidationService.validate_session_token(token)
         
         VehicleService.checkForVehicle(session_user, vid)
-        reservations = load_data_db_table("reservations")
-        vehicle_reservations = [r for r in reservations if r['vehicle_id'] == vid]
+        vehicle_reservations = get_item_db("vehicle_id",vid,"reservations")
         if not vehicle_reservations:
             raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="No reservations")
         return vehicle_reservations

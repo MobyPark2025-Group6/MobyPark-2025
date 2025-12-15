@@ -100,6 +100,21 @@ def load_data_db_table(tablename):
     content = [normalize_row(row) for row in rows]
     return content
 
+def get_item_db(Row, Item, TableName):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True) 
+   
+    cursor.execute(f"""
+                   SELECT * FROM {TableName}
+                   WHERE {Row} = %s
+                   """,(Item,))
+    
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    content = [normalize_row(row) for row in rows]
+    return content
+
 
 def save_user_data(data):
     save_data('data/users.json', data)
@@ -136,6 +151,12 @@ def save_discounts_data(data):
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
 
+def delete_data(item, Row, table):
+        sql =   f"""
+                DELETE FROM {table} 
+                WHERE {Row} = %s;
+                """
+        cursor.execute(sql,(item,))
 
 class save_vehicle:
 
@@ -160,7 +181,7 @@ class save_vehicle:
 
   
     def change_vehicle(vehicle_data):
-        u_id,lp,make,model,color,year,c, = vehicle_data
+        u_id,lp,make,model,color,year,c,id = vehicle_data
         sql = """
                 UPDATE vehicles
                 SET user_id = '%s', 
@@ -171,39 +192,66 @@ class save_vehicle:
                 year='%s',
                 year='%s',
 
+                WHERE id = '%s'
+
             """
         values = (
-            pli,   # parking_lot_id
-            lp,    # licenseplate
-            st,    # started
-            stp,   # stopped
-            user,  # user
-            dur,   # duration_minutes
-            cost,  # cost
-            pmnt,  # payment_status
+            u_id,    # parking_lot_id
+            lp,      # licenseplate
+            make,    # started
+            model,   # stopped
+            color,   # user
+            year,    # duration_minutes
+            c,       # cost
             id
         )
         cursor.execute(sql, values)
         
     def delete_vehicle(id):
-        sql =   """
-                DELETE FROM vehicles 
-                WHERE id='%s';
-                """
-        cursor.execute(sql,id)
-        pass
+        delete_data("vehicles",id)
+        
 
 class save_payment:
-    pass
+    def create_payment(payment_data):
+        pass
+    def change_payment(payment_data):
+        pass
+
+    def delete_payment(id):
+        delete_data("payments",id)
 
 class save_user:
-    pass
+    def create_user(user_data):
+        pass
+    def change_user(user_data):
+        pass
+
+    def delete_user(id):
+        delete_data("users",id)
 
 class save_parking_lot:
-    pass
+    def create_plt(plt_data):
+        pass
+    def change_plt(plt_data):
+        pass
+
+    def delete_plt(id):
+        delete_data("parking_lots",id)
 
 class save_discount:
-    pass
+    def create_discount(discount_data):
+        pass
+    def change_plt(change_discount):
+        pass
+
+    def delete_discount(id):
+        delete_data("discounts",id)
 
 class save_reservation:
-    pass
+    def create_reservation(rsv_data):
+        pass
+    def change_reservation(rsv_data):
+        pass
+
+    def delete_reservation(rsv_data):
+        delete_data("reservations",id)

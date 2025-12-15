@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Optional, List, Dict
 from session_calculator import generate_payment_hash, generate_transaction_validation_hash
-from storage_utils import load_data_db_table, save_payment_data
+from storage_utils import load_data_db_table, save_payment_data,delete_data
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from services.validation_service import ValidationService
 class PaymentService:
@@ -89,7 +89,7 @@ class PaymentService:
 
     def get_user_payments(username: str) -> List[Dict]:
         payments = load_data_db_table("payments")
-        print(len(payments))
+
         while True:
             for p in payments:
                 print(p)
@@ -105,8 +105,9 @@ class PaymentService:
         return [p for p in payments if p.get("initiator") == username]
 
     def delete_payment(admin_session: dict, transaction_id: str) -> List[Dict]:
+      
         payments = load_data_db_table("payments")
         if admin_session.get("role") != "ADMIN":
             raise PermissionError("Access denied")
-        pts = [p for p in payments if p.get("transaction_id") != transaction_id]
-        return any(x["transaction_id"] == transaction_id for x in pts)
+        delete_data(transaction_id, "transaction_id", "payments")
+        return any(x["transaction_id"] == transaction_id for x in payments)

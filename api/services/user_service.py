@@ -3,15 +3,18 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
-from storage_utils import save_user_data, load_data_db_table
+from storage_utils import save_user_data, load_data_db_table,delete_data
 from session_manager import add_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
+from argon2 import PasswordHasher
 
 class UserService:
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash password using MD5 (consider using bcrypt for production)"""
-        return hashlib.md5(password.encode()).hexdigest()
+        """Hash password using Argon2 and md5"""
+        ph = PasswordHasher()
+        return ph.hash(hashlib.md5(password.encode()).hexdigest())
+  
     
     @staticmethod
     def user_exists(username: str) -> bool:
@@ -69,16 +72,8 @@ class UserService:
 
     def delete_user(user_id: str) -> MessageResponse:
         """Delete a user by ID"""
-        users = load_data_db_table("users")
-        updated_users = [user for user in users if user.get('id') != user_id]
+        delete_data(id,"users")
         
-        if len(updated_users) == len(users):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        save_user_data(updated_users)
         return MessageResponse(message="User deleted successfully")
     
     @staticmethod
