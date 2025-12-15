@@ -642,3 +642,125 @@ class TestGetReservation:
             ReservationService.get_reservation(res_id, token)
         
         assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+
+class TestDeleteReservation:
+    """Tests for ReservationService.delete_reservation"""
+    def test_user_can_delete_own_reservation(
+        self,
+        mock_validation_service,
+        mock_storage_functions,
+        existing_reservations
+    ):
+        """Test that a user can delete their own reservation"""
+        res_id = "1"
+        token = "valid_token"
+        user_id = "user456"
+        
+        # Setup mocks
+        mock_validation_service['validate_token'].return_value = {
+            "id": user_id,
+            "username": "testuser"
+        }
+        mock_validation_service['check_admin'].return_value = False
+        mock_storage_functions['load'].return_value = existing_reservations.copy()
+        
+        # Execute
+        result = ReservationService.delete_reservation(res_id, token)
+        
+        # Assertions
+        assert result["status"] == "Success"
+        
+        # Verify that the reservation was removed
+        mock_storage_functions['save'].assert_called_once()
+        saved_data = mock_storage_functions['save'].call_args[0][0]
+        assert all(res["id"] != res_id for res in saved_data)
+        assert len(saved_data) == len(existing_reservations) - 1
+    
+    def test_admin_can_delete_any_reservation(
+        self,
+        mock_validation_service,
+        mock_storage_functions,
+        existing_reservations
+    ):
+        """Test that an admin can delete any user's reservation"""
+        res_id = "1"
+        token = "admin_token"
+        admin_id = "admin123"
+        
+        # Setup mocks - admin user
+        mock_validation_service['validate_token'].return_value = {
+            "id": admin_id,
+            "username": "admin"
+        }
+        mock_validation_service['check_admin'].return_value = True
+        mock_storage_functions['load'].return_value = existing_reservations.copy()
+        
+        # Execute
+        result = ReservationService.delete_reservation(res_id, token)
+        
+        # Assertions
+        assert result["status"] == "Success"
+        
+        # Verify that the reservation was removed
+        mock_storage_functions['save'].assert_called_once()
+        saved_data = mock_storage_functions['save'].call_args[0][0]
+        assert all(res["id"] != res_id for res in saved_data)
+        assert len(saved_data) == len(existing_reservations) - 1
+    
+    def test_user_cannot_delete_other_users_reservation(
+        self,
+        mock_validation_service,
+        mock_storage_functions,
+        existing_reservations
+    ):
+        """Test that a regular user cannot delete another user's reservation"""
+        res_id = "1"  # This belongs to user456
+        token = "valid_token"
+        user_id = "user123"  # Different user
+        
+        # Setup mocks
+        mock_validation_service['validate_token'].return_value = {
+            "id": user_id,
+            "username": "testuser"
+        }
+        mock_validation_service['check_admin'].return_value = False
+        mock_storage_functions['load'].return_value = existing_reservations.copy()
+        
+        # Execute & Assert
+        with pytest.raises(HTTPException) as exc_info:
+            ReservationService.delete_reservation(res_id, token)
+        
+        assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
+        assert "Access denied" in exc_info.value.detail
+        
+        # Verify save was NOT called
+        mock_storage_functions['save'].assert_not_called()
+
+    def test_reservation_not_found_raises_404(
+        self,
+        mock_validation_service,
+        mock_storage_functions,
+        existing_reservations
+    ):
+        """Test that deleting a non-existent reservation raises 404"""
+        res_id = "nonexistent_res"
+        token = "valid_token"
+        
+        # Setup mocks
+        mock_validation_service['validate_token'].return_value = {
+            "id": "user123",
+            "username": "testuser"
+        }
+        mock_storage_functions['load'].return_value = existing_reservations.copy()
+        
+        # Execute & Assert
+        with pytest.raises(HTTPException) as exc_info:
+            ReservationService.delete_reservation(res_id, token)
+        
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "Reservation not found" in exc_info.value.detail
+        
+        # Verify save was NOT called
+        mock_storage_functions['save'].assert_not_called()
+
+    

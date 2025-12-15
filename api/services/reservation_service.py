@@ -114,3 +114,42 @@ class ReservationService:
 
         return {"reservation": reservation}
     
+    @staticmethod
+    def delete_reservation(res_id: str, token: str) -> Dict[str, Any]:
+        """Delete a specific reservation by its ID"""
+        # Validate session token
+        session_user = ValidationService.validate_session_token(token)
+
+        reservations = load_reservation_data()
+        reservation_index = next((i for i, res in enumerate(reservations) if res["id"] == res_id), None)
+
+        if reservation_index is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reservation not found"
+            )
+        
+        reservation = reservations[reservation_index]
+
+        # Ensure the user is deleting a reservation for themselves or is an admin
+        if not ValidationService.check_valid_admin(session_user):
+            if reservation["user_id"] != session_user["id"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+
+        # Update parking lot to free up the reserved spot
+        parking_lots = load_parking_lot_data()
+        lot = parking_lots.get(reservation["lot_id"])
+        if lot and lot["reserved"] > 0:
+            lot["reserved"] -= 1
+            parking_lots[reservation["lot_id"]] = lot
+            save_parking_lot_data(parking_lots)
+
+        # Remove the reservation
+        reservations.pop(reservation_index)
+        save_reservation_data(reservations)
+
+        return {"status": "Success", "message": "Reservation deleted"}
+    
