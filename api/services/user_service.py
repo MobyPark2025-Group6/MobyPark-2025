@@ -4,9 +4,31 @@ from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
 from storage_utils import load_json, save_user_data
-from session_manager import add_session
+from session_manager import add_session, get_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
 
+# ===============================
+# SYSTEM USER SETUP
+# ===============================
+system_user = {
+    "id": "0",
+    "username": "system",
+    "role": "ADMIN",       # admin voor toegang tot alles
+    "hotel_guest": False,
+    "active": True,
+    "created_at": datetime.now().strftime("%Y-%m-%d")
+}
+
+system_token = "system-token"
+
+# Voeg system user toe aan session manager als hij nog niet bestaat
+if not get_session(system_token):
+    add_session(system_token, system_user)
+
+
+# ===============================
+# UserService Class
+# ===============================
 class UserService:
     @staticmethod
     def hash_password(password: str) -> str:
@@ -198,3 +220,8 @@ class UserService:
     def read_user(username: str) -> Optional[dict]:
         """Read user details by username"""
         return UserService.get_user_by_username(username)
+    
+    @staticmethod
+    def get_system_user_token() -> str:
+        """Return the system token for automatic actions"""
+        return system_token

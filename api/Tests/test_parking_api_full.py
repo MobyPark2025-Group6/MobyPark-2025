@@ -37,6 +37,14 @@ def auth_header():
         return {"Authorization": f"Bearer {token}"}
     return _auth
 
+@pytest.fixture
+def system_token():
+    return "system-token"
+
+@pytest.fixture
+def licenseplate():
+    return "AUTO123"
+
 # ---------------------------
 # Parking Lot Endpoint Tests
 # ---------------------------
@@ -161,6 +169,44 @@ def test_admin_update_session(mock_save, mock_load, mock_validate):
 
     assert updated_session["stopped"] == "01-01-2025 12:00:00"
     assert updated_session["user"] == "user2"
+
+@patch("services.parking_service.load_json", return_value={})
+@patch("services.parking_service.save_data")
+def test_auto_start_parking(mock_save, mock_load):
+    from services.parking_service import ParkingService
+    licenseplate = "AUTO123"
+    result = ParkingService.auto_start_parking("1", licenseplate)
+    assert result.message == "Session started successfully"
+    assert result.licenseplate == licenseplate
+
+@patch("services.parking_service.load_json", return_value={
+    "1": {"licenseplate": "AUTO123", "started": "09-12-2025 10:00:00", "stopped": None, "user": "system"}
+})
+
+@patch("services.parking_service.save_data")
+def test_auto_stop_parking(mock_save, mock_load):
+    from services.parking_service import ParkingService
+    licenseplate = "AUTO123"
+    result = ParkingService.auto_stop_parking("1", licenseplate)
+    assert result.message == "Session stopped successfully"
+    assert result.licenseplate == licenseplate
+
+@patch("services.parking_service.load_json", return_value={
+    "1": {"licenseplate": "AUTO123", "started": "09-12-2025 10:00:00", "stopped": None, "user": "system"}
+})
+
+def test_auto_start_existing_session_raises(mock_load, licenseplate):
+    from services.parking_service import ParkingService
+    with pytest.raises(Exception) as exc:
+        ParkingService.auto_start_parking("1", licenseplate)
+    assert "Cannot start a session when another session for this license plate is already active" in str(exc.value)
+
+@patch("services.parking_service.load_json", return_value={})
+def test_auto_stop_nonexistent_session_raises(mock_load, licenseplate):
+    from services.parking_service import ParkingService
+    with pytest.raises(Exception) as exc:
+        ParkingService.auto_stop_parking("1", licenseplate)
+    assert "Cannot stop a session when there is no active session for this license plate" in str(exc.value)
 
 
 # ---------------------------
