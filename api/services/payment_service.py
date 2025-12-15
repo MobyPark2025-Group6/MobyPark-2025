@@ -116,3 +116,20 @@ class PaymentService:
             raise PermissionError("Access denied")
         pts = [p for p in payments if p.get("transaction_id") != transaction_id]
         return any(x["transaction_id"] == transaction_id for x in pts)
+    
+    def grant_complimentary_parking(self, username: str, transaction_id: str, manager_session: dict) -> Dict:
+        if manager_session.get("role") not in ["ADMIN", "MANAGER"]:
+            raise PermissionError("Only managers and admins can grant complimentary parking")
+        
+        payments = load_payment_data()
+        payment = next((p for p in payments if p["transaction"] == transaction_id), None)
+        
+        if not payment:
+            raise ValueError("Payment not found")
+        
+        payment["amount"] = 0
+        payment["complimentary"] = True
+        payment["granted_by"] = manager_session["username"]
+        payment["granted_at"] = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        save_payment_data(payments)
+        return payment
