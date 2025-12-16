@@ -39,6 +39,11 @@ class VehicleService:
         return item
         
     @staticmethod
+    def get_vehicle_by_license_plate(license_plate: str, token: str):
+        vehicle = get_item_db("license_plate",license_plate,"vehicles")
+        return Vehicle(**vehicle[0]) if vehicle else None
+        
+    @staticmethod
     def checkForVehicle(session_user : User , Vid : str):
         """Check if the vehicle exists"""
 
