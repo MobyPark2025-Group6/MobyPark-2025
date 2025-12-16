@@ -21,8 +21,10 @@ def mock_load_reservation_data(mocker):
 def mock_storage_functions(mocker):
     """Fixture to provide mocked storage functions"""
     return {
-        'load': mocker.patch('services.reservation_service.load_reservation_data'),
-        'save': mocker.patch('services.reservation_service.save_reservation_data')
+        'load_reservation': mocker.patch('services.reservation_service.load_reservation_data'),
+        'save_reservation': mocker.patch('services.reservation_service.save_reservation_data'),
+        'load_parking_lot': mocker.patch('services.reservation_service.load_parking_lot_data'),
+        'save_parking_lot': mocker.patch('services.reservation_service.save_parking_lot_data')
     }
 
 @pytest.fixture
