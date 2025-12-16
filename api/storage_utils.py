@@ -205,31 +205,7 @@ class save_vehicle:
         create_data("Vehicles", vehicle_data)
   
     def change_vehicle(vehicle_data):
-        u_id,lp,make,model,color,year,c,id = vehicle_data
-        sql = """
-                UPDATE vehicles
-                SET user_id = '%s', 
-                license_plate = '%s', 
-                make = '%s',
-                model ='%s',
-                color='%s',
-                year='%s',
-                year='%s',
-
-                WHERE id = '%s'
-
-            """
-        values = (
-            u_id,    # parking_lot_id
-            lp,      # licenseplate
-            make,    # started
-            model,   # stopped
-            color,   # user
-            year,    # duration_minutes
-            c,       # cost
-            id
-        )
-        cursor.execute(sql, values)
+        change_data("vehicles", vehicle_data, "id")
         
     def delete_vehicle(id):
         delete_data("vehicles",id)
@@ -237,7 +213,7 @@ class save_vehicle:
 
 class save_payment:
     def create_payment(payment_data):
-        pass
+        create_data("payments",payment_data)
     def change_payment(payment_data):
         pass
 
@@ -255,7 +231,7 @@ class save_user:
 
 class save_parking_lot:
     def create_plt(plt_data):
-        pass
+        create_data("parking_lots",plt_data)
     def change_plt(plt_data):
         pass
 
@@ -264,7 +240,7 @@ class save_parking_lot:
 
 class save_discount:
     def create_discount(discount_data):
-        pass
+        create_data("discounts",discount_data)
     def change_plt(change_discount):
         pass
 
@@ -273,7 +249,7 @@ class save_discount:
 
 class save_reservation:
     def create_reservation(rsv_data):
-        pass
+        create_data("reservations",rsv_data)
     def change_reservation(rsv_data):
         pass
 
