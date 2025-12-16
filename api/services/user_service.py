@@ -3,9 +3,10 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
-from storage_utils import load_json, save_user_data
-from session_manager import add_session, get_session
+from storage_utils import create_data, save_user_data, load_data_db_table,delete_data, get_item_db
+from session_manager import add_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
+from argon2 import PasswordHasher
 
 # ===============================
 # SYSTEM USER SETUP
@@ -32,13 +33,15 @@ if not get_session(system_token):
 class UserService:
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash password using MD5 (consider using bcrypt for production)"""
+        """Hash password using Argon2 and md5"""
+        # ph = PasswordHasher()
+        # return ph.hash(hashlib.md5(password.encode()).hexdigest())
         return hashlib.md5(password.encode()).hexdigest()
     
     @staticmethod
     def user_exists(username: str) -> bool:
         """Check if username already exists"""
-        users = load_json('data/users.json')
+        users = load_data_db_table("users")
         return any(user.get('username') == username for user in users)
     
     @staticmethod
@@ -53,16 +56,9 @@ class UserService:
         
         # Hash password
         hashed_password = UserService.hash_password(user_data.password)
-        
-        # Load existing users
-        users = load_json('data/users.json')
-        
-        # Generate new user ID
-        new_id = str(len(users) + 1)
-        
+                
         # Create new user with extended fields
         new_user = {
-            'id': new_id,
             'username': user_data.username,
             'password': hashed_password,
             'name': user_data.name,
@@ -74,9 +70,7 @@ class UserService:
             'active': True
         }
         
-        # Add to users list and save
-        users.append(new_user)
-        save_user_data(users)
+        create_data("users", new_user)
         
         return MessageResponse(message="User created successfully")
     
@@ -91,22 +85,14 @@ class UserService:
 
     def delete_user(user_id: str) -> MessageResponse:
         """Delete a user by ID"""
-        users = load_json('data/users.json')
-        updated_users = [user for user in users if user.get('id') != user_id]
+        delete_data(id,"users")
         
-        if len(updated_users) == len(users):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-        
-        save_user_data(updated_users)
         return MessageResponse(message="User deleted successfully")
     
     @staticmethod
     def update_user(user_id: str, user_data: UserRegister) -> MessageResponse:
         """Update user information"""
-        users = load_json('data/users.json')
+        users = load_data_db_table("users")
         user_found = False
         
         for user in users:
@@ -143,7 +129,7 @@ class UserService:
         hashed_password = UserService.hash_password(credentials.password)
         
         # Load users and find match
-        users = load_json('data/users.json')
+        users = load_data_db_table("users")
         
         for user in users:
             if (user.get("username") == credentials.username and 
@@ -167,26 +153,25 @@ class UserService:
     @staticmethod
     def get_user_by_username(username: str) -> Optional[dict]:
         """Get user by username (without password)"""
-        users = load_json('data/users.json')
-        for user in users:
-            if user.get("username") == username:
-                return {
-                    'id': user.get('id'),
-                    'username': user.get('username'),
-                    'name': user.get('name'),
-                    'email': user.get('email'),
-                    'phone': user.get('phone'),
-                    'role': user.get('role', 'USER'),
-                    'created_at': user.get('created_at'),
-                    'birth_year': user.get('birth_year'),
-                    'active': user.get('active', True)
-                }
+        user = get_item_db("username",username,"users")[0]
+        if user :
+            return {
+                        'id': user.get('id'),
+                        'username': user.get('username'),
+                        'name': user.get('name'),
+                        'email': user.get('email'),
+                        'phone': user.get('phone'),
+                        'role': user.get('role', 'USER'),
+                        'created_at': user.get('created_at'),
+                        'birth_year': user.get('birth_year'),
+                        'active': user.get('active', True)
+                    }
         return None
     
     @staticmethod
     def update_user(user_data: UserRegister) -> MessageResponse:
         """Update existing user details"""
-        users = load_json('data/users.json')
+        users = load_data_db_table("users")
         for user in users:
             if user.get("username") == user_data.username:
                 user['name'] = user_data.name
@@ -204,7 +189,7 @@ class UserService:
     @staticmethod
     def delete_user(username: str) -> MessageResponse:
         """Delete user by username"""
-        users = load_json('data/users.json')
+        users = load_data_db_table("users")
         for i, user in enumerate(users):
             if user.get("username") == username:
                 users.pop(i)

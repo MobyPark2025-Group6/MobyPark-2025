@@ -6,7 +6,7 @@ from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
-from models.reservation_models import ReservationRegister
+from models.reservation_models import ReservationRegister, ReservationOut
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.reservation_service import ReservationService
@@ -53,6 +53,7 @@ security = HTTPBearer(auto_error=False)
 def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[str]:
     """Extract token from Authorization header"""
     if credentials:
+        print(credentials)
         return credentials.credentials
     return None
 
@@ -113,7 +114,7 @@ async def get_user_vehicles(
     Requires Bearer token in Authorization header.
     Users can only access their own vehicle list unless they have ADMIN role.
     """
-    return UserService.get_user_vehicles(username, token)
+    return VehicleService.getUserVehicles(username, token)
 
 # Parking Lot Management Endpoints
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])
@@ -232,8 +233,6 @@ async def delete_parking_session(
     """Delete a specific parking session (Admin only)."""
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
-from fastapi import Depends
-
 @app.get("/payments", response_model=List[PaymentOut], tags=["Payments"])
 async def get_payments(token: Optional[str] = Depends(get_token)):
     """Get all payments for the authenticated user"""
@@ -305,72 +304,60 @@ async def update_payment(transaction_id: str, update: PaymentUpdate, token: Opti
     except PermissionError:
         raise HTTPException(status_code=401, detail="Validation failed")
 
-@app.get("/reservations/{uid}", tags=["Reservations"])
-async def get_reservations(
-     uid : int,
-     authorization: Annotated[Optional[str], Header()] = None
-):
-    """Get user's parking reservations (Coming Soon)"""
-    return ReservationService.get_reservations_list(uid, authorization)
 
-
-@app.post("/reservations", tags=["Reservations"])
-async def create_reservation(
-    reservation_info : ReservationRegister,
-    authorization: Annotated[Optional[str], Header()] = None
-):
-    """
-        Create a new parking reservation 
-    """
-
-    return ReservationService.create_reservation(reservation_info, authorization)
-
-@app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse)
+@app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_reservations(
     vehicle_id : str,
-    authorization: Annotated[Optional[str], Header()] = None
+    token: Optional[str] = Depends(get_token)):
     
-):
-    """
-    Acquire all reservations for a vehicle ID (currently none functional)
-    """
-    return VehicleService.get_vehicle_reservations(authorization, vehicle_id)
 
-@app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse)
+    """
+    Acquire all reservations for a vehicle ID deze check
+    """
+    return VehicleService.get_vehicle_reservations(token, vehicle_id)
+
+@app.get("/vehicles/{vehicle_id}/history", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_history(
     vehicle_id : str,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Acquire all history for a vehicle by ID (currently none functional)
     """
-    return  VehicleService.get_vehicle_history(authorization, vehicle_id) 
+    return  VehicleService.get_vehicle_history(token, vehicle_id) 
 
-@app.get("/vehicles/{user_name}", response_model=SessionResponse)
+@app.get("/vehicle", response_model=List[Vehicle], tags=["Vehicles"])
+async def get_vehicles(
+    token: Optional[str] = Depends(get_token)):
+    """
+    Acquire all vehicles for the logged-in user
+    """
+    return VehicleService.getUserVehicles(None, token)
+
+@app.get("/vehicle/{license_plate}", response_model=Vehicle, tags=["Vehicles"])
+async def get_vehicle_by_license_plate(
+    license_plate : str,
+    token: Optional[str] = Depends(get_token)):
+    """
+    Acquire a vehicle by its license plate (Admin only)
+    
+    Requires Bearer token in Authorization header with admin privileges.
+    """
+    return VehicleService.get_vehicle_by_license_plate(license_plate, token)
+
+@app.get("/vehicles/{user_name}", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicles(
     user_name : str,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Acquire all vehicles from a user as an admin
     """
-    return VehicleService.get_all_vehicles (authorization, user_name)
+    return VehicleService.get_all_vehicles (token, user_name)
 
-@app.get("/vehicles", response_model=SessionResponse)
-async def get_vehicles(
-
-    authorization: Annotated[Optional[str], Header()] = None
-):
-    """
-    Acquire all vehicles from the user
-    """
-    return VehicleService.get_all_vehicles(authorization)
-@app.put("/vehicles/{vid}")
+@app.put("/vehicles/{vid}", tags=["Vehicles"])
 async def change_vehicle(
     vid: str,
     vehicle: Vehicle,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Change/update a vehicle's information.
     
@@ -380,16 +367,15 @@ async def change_vehicle(
         authorization: Session token for authentication
     """
     return VehicleService.change_vehicle(
-        authorization,
+        token,
         vid,
         vehicle
     )
 
-@app.post("/vehicles")
+@app.post("/vehicles", tags=["Vehicles"])
 async def create_vehicle(
     vehicle_data: dict,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Create a new vehicle
     
@@ -397,21 +383,12 @@ async def create_vehicle(
         vehicle_data: Dictionary containing vehicle information (name, license_plate)
         authorization: Session token for authentication
     """
-    return VehicleService.create_vehicle(authorization, vehicle_data)
+    return VehicleService.create_vehicle(token, vehicle_data)
 
-@app.post("/vehicles/{lid}/entry")
-async def act_on_vehicle(
-    lid: str,
-    authorization: str = Header(None, alias="Authorization")
-):
-    """Act on a vehicle (e.g., parking lot entry)"""
-    return VehicleService.ActOnVehicle(authorization, lid)
-
-@app.delete("/vehicles/{vid}")
+@app.delete("/vehicles/{vid}", tags=["Vehicles"])
 async def delete_vehicle(
     vid: str,
-    authorization: Annotated[Optional[str], Header()] = None
-):
+    token: Optional[str] = Depends(get_token)):
     """
     Delete a vehicle
     
@@ -419,7 +396,7 @@ async def delete_vehicle(
         vid: Vehicle ID to delete
         authorization: Session token for authentication
     """
-    return VehicleService.delete_vehicle(authorization, vid)
+    return VehicleService.delete_vehicle(token, vid)
 
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])
@@ -499,38 +476,26 @@ async def delete_parking_session(
     """Delete a specific parking session (Admin only)."""
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
-# Placeholder endpoints for future implementation
-@app.get("/vehicles", tags=["Vehicles"])
-async def get_vehicles():
-    """Get user's registered vehicles (Coming Soon)"""
-    return {"message": "Vehicles endpoint - Coming Soon"}
 
-@app.post("/vehicles", tags=["Vehicles"])
-async def register_vehicle():
-    """Register a new vehicle (Coming Soon)"""
-    return {"message": "Vehicle registration - Coming Soon"}
-
-@app.get("/reservations/{res_id}", tags=["Reservations"])
-async def get_reservations(
-        res_id: str,
-        token: Optional[str] = Depends(get_token)
-    ):
-    """Get reservation details by reservation ID
-
-    Requires Bearer token in Authorization header.
+@app.get("/reservations/{res_id}", response_model=ReservationOut, tags=["Reservations"]) 
+async def get_reservation_by_id(
+    res_id : str,
+    token: Optional[str] = Depends(get_token)):
     """
-    return ReservationService.get_reservation(res_id, token)
-
-@app.post("/reservations", tags=["Reservations"])
-async def create_reservation(
-        reservation_data: ReservationRegister,
-        token: Optional[str] = Depends(get_token)
-    ):
-    """Create a new reservation
-    
-    Requires Bearer token in Authorization header.
+    Acquire a reservation by its ID
     """
-    return ReservationService.create_reservation(reservation_data, token)
+    return ReservationService.get_reservation(res_id, token)      
+
+# @app.delete("/reservations/{res_id}", response_model=dict, tags=["Reservations"])
+# async def delete_reservation_by_id(
+#     res_id : str,
+#     token: Optional[str] = Depends(get_token)):
+#     """
+#     Delete a reservation by its ID
+#     """
+#     return ReservationService.delete_reservation_by_id(res_id, token)
+
+
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)

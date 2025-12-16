@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from unittest.mock import patch
 from models.vehicle_models import Vehicle
-from storage_utils import load_vehicle_data,  save_vehicle_data
+from storage_utils import load_data_db_table, save_vehicle_data
 from services.vehicle_service import VehicleService
 from services.user_service import *
 from models.user_models import * 
@@ -52,7 +52,7 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
 
     with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
-         patch("services.vehicle_service.load_parking_lot_data") as mock_load_parking:
+         patch("services.vehicle_service.load_data_db_table") as mock_load_parking:
 
         # Make the validator accept any token and return a session user dict
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
@@ -109,6 +109,7 @@ def test_get_vehicle_id_history_mock(auth_header):
         mock_check.return_value = None
 
         result = VehicleService.get_vehicle_history(token, vid)
+    
         assert isinstance(result, list)
         assert len(result) >= 1                   # only one item matches vehicle_id == "1"
       
@@ -165,7 +166,7 @@ def test_get_all_vehicles_admin_lookup():
 
 def test_change_vehicle_mocked():
     token = "fake-token"
-    with patch("services.vehicle_service.load_vehicle_data") as mock_load, \
+    with patch("services.vehicle_service.load_data_db_table") as mock_load, \
      patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
      patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_vehicle_check , \
      patch("services.vehicle_service.save_vehicle_data") as mock_save : 
@@ -194,7 +195,7 @@ def test_create_vehicle_mocked():
     with patch("services.vehicle_service.VehicleService.check_for_liscense_id") as mock_liscenseid_check, \
          patch("services.vehicle_service.VehicleService.check_for_parameters") as mock_param_check, \
          patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
-         patch("services.vehicle_service.load_json") as mock_vehicle_load, \
+         patch("services.vehicle_service.load_data_db_table") as mock_vehicle_load, \
          patch("services.vehicle_service.save_vehicle_data") as mock_save : 
             
             mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
@@ -233,7 +234,7 @@ def test_delete_vehicle_mocked():
 
     with patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
-         patch("services.vehicle_service.load_vehicle_data") as mock_load, \
+         patch("services.vehicle_service.load_data_db_table") as mock_load, \
          patch("services.vehicle_service.save_vehicle_data") as mock_save:
 
         # First load returns the initial list, second load (after save) should return remaining

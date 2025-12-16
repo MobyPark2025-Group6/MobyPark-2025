@@ -1,6 +1,7 @@
 import json 
 import pathlib
 import os 
+import csv
 from datetime import datetime
 
 class load_data :
@@ -9,17 +10,29 @@ class load_data :
         if not time:
             return None 
         return datetime.fromisoformat(time.replace("Z", "+00:00"))
+    
     def payment_time_convert(time : str):
         if not time:
             return None 
         return datetime.strptime(time[:19], '%d-%m-%Y %H:%M:%S')
     
+    def parking_sesh_time_convert(time : str):
+        if not time:
+            return None 
+        return datetime.strptime(
+        time.replace("T", " "), 
+        "%Y-%m-%d %H:%M:%S%z"
+    )
+    
+
     def load_users():
         with open('../data/users.json', 'r') as file:
             data = json.load(file)
             rows = []
             for u in data:
-               
+                    if u.get('username') == 'testuser':
+                        print("Test user removed")
+                        continue
                     rows.append({
                             'username':u.get('username'),
                             'password':u.get('password'),
@@ -44,6 +57,7 @@ class load_data :
                     'make':u.get('make'),
                     'model':u.get('model'),
                     'color':u.get('color'),
+                    'year':u.get('year'),
                     'created_at':load_data.time_convert(u.get('created_at')),
                 })
             return rows
@@ -96,11 +110,19 @@ class load_data :
         rows = []
         for t in files:
             with open(f'../data/pdata/{t}', 'r') as file:
-                data = json.load(file)
+                data = json.load(file)               
                 for u in data:
-                    rows.append((
-                        data[u]
-                    ))
+                    rows.append({
+                        "parking_lot_id": data[u]["parking_lot_id"],
+                        "licenseplate":data[u]["licenseplate"],
+                        "started":load_data.parking_sesh_time_convert(data[u]["started"]),
+                        "stopped":load_data.parking_sesh_time_convert(data[u]["stopped"]),
+                        "user":data[u]["user"],
+                        "duration_minutes":data[u]["duration_minutes"],
+                        "cost":data[u]["cost"],
+                        "payment_status":data[u]["payment_status"],
+
+                    })
         return rows
             
     def load_payments():
@@ -137,3 +159,24 @@ class load_data :
                     "parking_lot_id":u.get("parking_lot_id")
                 })
             return rows
+
+# ps = load_data.load_parking_sessions()
+# print(ps[0])
+#  transaction VARCHAR(255) NOT NULL UNIQUE,
+#     amount DECIMAL(12,2) DEFAULT 0,
+#     initiator VARCHAR(255),
+
+#     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+#     completed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+#     date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+#     method VARCHAR(255) NOT NULL,
+#     issuer VARCHAR(255) NOT NULL,
+#     bank VARCHAR(255) NOT NULL,
+#     hash VARCHAR(255) NOT NULL,
+#     session_id INT,
+#     parking_lot_id INT,
+# payments = load_data.load_payments()
+# print(payments[0])
+# # for i in payments:
+# #     if i['transaction'] or i['amount'] or i['issuer'] or ['session_id']== None :
+# #         print(i)
