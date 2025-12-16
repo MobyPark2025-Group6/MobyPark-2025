@@ -176,17 +176,18 @@ def save_discounts_data(data):
 def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
 
-# def change_data(table,values,condition):
-#     columns = ", ".join(values.keys())
-#     placeholders = ", ".join(["%s"] * len(values))
-#     values = tuple(values)
-#     sql = f"""
-#                 UPDATE {table}
-#                 SET 
-
-#                 WHERE {condition}
-
-#             """
+def change_data(table,values,condition):
+    columns = list(values.keys())
+    cond_val = values[condition]
+    values = tuple([v for v in tuple(values.values()) if v != str(cond_val)])
+    set_sql = f"""UPDATE {table}\n SET """
+    for c in columns:
+        if not c == condition:
+            set_string = f"{c} = %s \n "
+            set_sql += set_string
+            
+    set_sql+=f"\n WHERE {condition} = {cond_val}"
+    cursor.execute(set_sql, values)
     
 def create_data(table, values):
     # Backwards-compatible wrapper
