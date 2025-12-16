@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-class ParkingLotCreate(BaseModel):
+class ParkingLotBase(BaseModel):
     id: int
     name: str
     location: str

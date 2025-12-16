@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from storage_utils import  save_data, save_parking_lot_data, load_data_db_table, load_json, delete_data, get_item_db, create_data, change_data
 from session_manager import get_session
 from models.parking_models import (
-    ParkingLotCreate, SessionStart, SessionStop, 
+    ParkingLotBase, SessionStart, SessionStop, 
     SessionResponse, ParkingLotResponse
 )
 
@@ -124,7 +124,7 @@ class ParkingService:
         )
     
     @staticmethod
-    def create_parking_lot(parking_lot_data: ParkingLotCreate, token: Optional[str]) -> ParkingLotResponse:
+    def create_parking_lot(parking_lot_data: ParkingLotBase, token: Optional[str]) -> ParkingLotResponse:
         """Create a new parking lot (Admin only)"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)        

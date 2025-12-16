@@ -3,8 +3,8 @@ import os
 from datetime import datetime
 from typing import Optional, List, Dict
 from session_calculator import generate_payment_hash, generate_transaction_validation_hash
-from storage_utils import load_data_db_table, save_payment_data,delete_data
-from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
+from storage_utils import load_data_db_table, save_payment_data,delete_data, create_data,get_item_db,change_data
+from models.payment_models import PaymentBase, PaymentRefund, PaymentUpdate, PaymentOut
 from services.validation_service import ValidationService
 class PaymentService:
 
@@ -37,9 +37,10 @@ class PaymentService:
     # Core business operations
     # --------------------------
 
-    def create_payment(payment: PaymentCreate, session_user: dict) -> Dict:
-        payments = load_data_db_table("payments")
+    def create_payment(payment: PaymentBase, session_user: dict) -> Dict:
+
         transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
+
 
         new_payment = {
             "transaction": transaction_id,
@@ -47,15 +48,20 @@ class PaymentService:
             "initiator": session_user["username"],
             "created_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
             "completed": False,
+            "date":payment.date,
+            "method":payment.method,
+            "issuer":payment.issuer,
+            "bank":payment.bank,
             "hash": generate_transaction_validation_hash(),
+            "session_id":payment.session_id,
+            "parking_lot_id":payment.parking_lot_id
         }
-        payments.append(new_payment)
-        save_payment_data(payments)
+        create_data('payments',new_payment)
         return new_payment
 
 
     def refund_payment(payment: PaymentRefund, session_user: dict) -> Dict:
-        payments = load_data_db_table("payments")
+        payments = load_data_db_table("refunds")
         transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
 
         refund_entry = {
@@ -73,18 +79,18 @@ class PaymentService:
 
 
     def update_payment(transaction_id: str, update: PaymentUpdate) -> Dict:
-        payments = load_data_db_table("payments")
-        payment = next((p for p in payments if p["transaction"] == transaction_id), None)
 
-        if not payment:
+        pmnt = get_item_db('transaction',transaction_id,'payments')[0]
+
+        if not pmnt:
             raise ValueError("Payment not found")
-        if payment["hash"] != update.validation:
+        if pmnt["hash"] != update.validation:
             raise PermissionError("Validation failed")
 
-        payment["completed"] = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        payment["t_data"] = update.t_data
-        save_payment_data(payments)
-        return payment
+        pmnt["completed"] = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        pmnt["t_data"] = update.t_data
+        change_data('payments',pmnt,)
+        return pmnt
 
 
     def get_user_payments(username: str) -> List[Dict]:
