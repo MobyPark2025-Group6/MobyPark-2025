@@ -8,6 +8,22 @@ from models.parking_models import (
     SessionResponse, ParkingLotResponse
 )
 
+# Setup system user voor automatische parkeerregistratie
+system_user = {
+    "id": "0",
+    "username": "system",
+    "role": "ADMIN",
+    "hotel_guest": False,
+    "active": True,
+    "created_at": "2025-12-09"
+}
+
+system_token = "system-token"
+
+# Voeg system user toe als hij nog niet bestaat
+if not get_session(system_token):
+    add_session(system_token, system_user)
+
 class ParkingService:
     @staticmethod
     def validate_session_token(token: Optional[str]) -> Dict[str, Any]:
@@ -122,7 +138,30 @@ class ParkingService:
             licenseplate=session_data.licenseplate,
             stopped=session["stopped"]
         )
-    
+
+    # -------------------------
+    # Auto system user parking
+    # -------------------------
+
+    @staticmethod
+    def auto_start_parking(lot_id: str, license_plate: str) -> SessionResponse:
+        """Start automatisch een parkeerregistratie voor system user"""
+        return ParkingService.start_parking_session(
+            lot_id,
+            SessionStart(licenseplate=license_plate),
+            system_token  # gebruikt de system user
+        )
+
+    @staticmethod
+    def auto_stop_parking(lot_id: str, license_plate: str) -> SessionResponse:
+        """Stop automatisch een parkeerregistratie voor system user"""
+        return ParkingService.stop_parking_session(
+            lot_id,
+            SessionStop(licenseplate=license_plate),
+            system_token
+        )
+
+
     @staticmethod
     def create_parking_lot(parking_lot_data: ParkingLotBase, token: Optional[str]) -> ParkingLotResponse:
         """Create a new parking lot (Admin only)"""
