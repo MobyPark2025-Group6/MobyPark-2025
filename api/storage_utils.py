@@ -85,6 +85,31 @@ def load_data(filename):
         return load_text(filename)
     else:
         return None
+
+
+def save_record(table: str, data: dict, update_on_duplicate: bool = False) -> int:
+    """Insert a row into MySQL and optionally update on duplicate key."""
+    if not data:
+        raise ValueError("No data provided to save")
+
+    columns = ", ".join(data.keys())
+    placeholders = ", ".join(["%s"] * len(data))
+    values = tuple(data.values())
+
+    sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+    if update_on_duplicate:
+        updates = ", ".join([f"{col}=VALUES({col})" for col in data.keys()])
+        sql += f" ON DUPLICATE KEY UPDATE {updates}"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql, values)
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        cursor.close()
+        conn.close()
     
 #Grabs the data from table for a given name
 #Handles the following : 
@@ -163,18 +188,9 @@ def save_vehicle_data(data):
 
 #             """
     
-def create_data(Table, values):
-
-    columns = ", ".join(values.keys())
-    placeholders = ", ".join(["%s"] * len(values))
-    values = tuple(values)
-
-    sql = f"""
-            INSERT INTO {Table} ({columns})
-            VALUES ({placeholders})
-        """
-  
-    cursor.execute(sql, values)
+def create_data(table, values):
+    # Backwards-compatible wrapper
+    return save_record(table, values)
 
 def delete_data(item, Row, table):
         sql =   f"""
@@ -264,12 +280,12 @@ class save_reservation:
     def delete_reservation(rsv_data):
         delete_data("reservations",id)
 
-create_data("vehicles",  {
-                        "user_id": 1,
-                        "license_plate": "license_plate",
-                        "make": "make",
-                        "model":"model",
-                        "color":"color",
-                        "year":"Year",
-                        "created_at": "DatetimeNow"
-                    })
+# create_data("vehicles",  {
+#                         "user_id": 1,
+#                         "license_plate": "license_plate",
+#                         "make": "make",
+#                         "model":"model",
+#                         "color":"color",
+#                         "year":"Year",
+#                         "created_at": "DatetimeNow"
+#                     })

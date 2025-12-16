@@ -3,7 +3,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
-from storage_utils import save_user_data, load_data_db_table,delete_data
+from storage_utils import create_data, save_user_data, load_data_db_table,delete_data
 from session_manager import add_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
 from argon2 import PasswordHasher
@@ -34,16 +34,9 @@ class UserService:
         
         # Hash password
         hashed_password = UserService.hash_password(user_data.password)
-        
-        # Load existing users
-        users = load_data_db_table("users")
-        
-        # Generate new user ID
-        new_id = str(len(users) + 1)
-        
+                
         # Create new user with extended fields
         new_user = {
-            'id': new_id,
             'username': user_data.username,
             'password': hashed_password,
             'name': user_data.name,
@@ -55,9 +48,7 @@ class UserService:
             'active': True
         }
         
-        # Add to users list and save
-        users.append(new_user)
-        save_user_data(users)
+        create_data("users", new_user)
         
         return MessageResponse(message="User created successfully")
     
