@@ -3,7 +3,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
-from storage_utils import create_data, save_user_data, load_data_db_table,delete_data
+from storage_utils import create_data, save_user_data, load_data_db_table,delete_data, get_item_db
 from session_manager import add_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
 from argon2 import PasswordHasher
@@ -131,22 +131,19 @@ class UserService:
     @staticmethod
     def get_user_by_username(username: str) -> Optional[dict]:
         """Get user by username (without password)"""
-        users = load_data_db_table("users")
- 
-        for user in users:
-
-            if user.get("username") == username:
-                return {
-                    'id': user.get('id'),
-                    'username': user.get('username'),
-                    'name': user.get('name'),
-                    'email': user.get('email'),
-                    'phone': user.get('phone'),
-                    'role': user.get('role', 'USER'),
-                    'created_at': user.get('created_at'),
-                    'birth_year': user.get('birth_year'),
-                    'active': user.get('active', True)
-                }
+        user = get_item_db("username",username,"users")[0]
+        if user :
+            return {
+                        'id': user.get('id'),
+                        'username': user.get('username'),
+                        'name': user.get('name'),
+                        'email': user.get('email'),
+                        'phone': user.get('phone'),
+                        'role': user.get('role', 'USER'),
+                        'created_at': user.get('created_at'),
+                        'birth_year': user.get('birth_year'),
+                        'active': user.get('active', True)
+                    }
         return None
     
     @staticmethod
