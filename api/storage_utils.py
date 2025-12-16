@@ -126,13 +126,15 @@ def load_data_db_table(tablename):
     return content
 
 def get_item_db(Row, Item, TableName):
+    print(Item)
     conn = get_db_connection()
+
     cursor = conn.cursor(dictionary=True) 
    
     cursor.execute(f"""
                    SELECT * FROM {TableName}
-                   WHERE {Row} = %s
-                   """,(Item,))
+                   WHERE {Row} = '{Item}'
+                   """)
     
     rows = cursor.fetchall()
     cursor.close()
@@ -257,12 +259,4 @@ class save_reservation:
     def delete_reservation(rsv_data):
         delete_data("reservations",id)
 
-# create_data("vehicles",  {
-#                         "user_id": 1,
-#                         "license_plate": "license_plate",
-#                         "make": "make",
-#                         "model":"model",
-#                         "color":"color",
-#                         "year":"Year",
-#                         "created_at": "DatetimeNow"
-#                     })
+# print(get_item_db("username",'t',"users"))
