@@ -16,7 +16,6 @@ class VehicleService:
         """getUserVehicleIDs"""
         # From Vehicles get all for where the user_id == session user_id
         uvehicles = get_item_db('user_id',session_user['id'],"vehicles")
-
         id_only = [v['id'] for v in uvehicles]
         return id_only
         

@@ -198,9 +198,9 @@ def create_data(table, values):
 def delete_data(item, Row, table):
         sql =   f"""
                 DELETE FROM {table} 
-                WHERE {Row} = %s;
+                WHERE {Row} = '{item}'
                 """
-        cursor.execute(sql,(item,))
+        cursor.execute(sql)
 
 class save_vehicle:
 
