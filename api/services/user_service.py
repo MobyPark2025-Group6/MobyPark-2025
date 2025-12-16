@@ -13,8 +13,8 @@ class UserService:
     def hash_password(password: str) -> str:
         """Hash password using Argon2 and md5"""
         # ph = PasswordHasher()
+        # return ph.hash(hashlib.md5(password.encode()).hexdigest())
         return hashlib.md5(password.encode()).hexdigest()
-  
     
     @staticmethod
     def user_exists(username: str) -> bool:

@@ -198,9 +198,9 @@ def create_data(table, values):
 def delete_data(item, Row, table):
         sql =   f"""
                 DELETE FROM {table} 
-                WHERE {Row} = %s;
+                WHERE {Row} = '{item}'
                 """
-        cursor.execute(sql,(item,))
+        cursor.execute(sql)
 
 class save_vehicle:
 
@@ -218,7 +218,7 @@ class save_payment:
     def create_payment(payment_data):
         create_data("payments",payment_data)
     def change_payment(payment_data):
-        pass
+          change_data()
 
     def delete_payment(id):
         delete_data("payments",id)
@@ -236,7 +236,7 @@ class save_parking_lot:
     def create_plt(plt_data):
         create_data("parking_lots",plt_data)
     def change_plt(plt_data):
-        pass
+          change_data()
 
     def delete_plt(id):
         delete_data("parking_lots",id)
@@ -245,7 +245,7 @@ class save_discount:
     def create_discount(discount_data):
         create_data("discounts",discount_data)
     def change_plt(change_discount):
-        pass
+          change_data()
 
     def delete_discount(id):
         delete_data("discounts",id)
@@ -254,9 +254,8 @@ class save_reservation:
     def create_reservation(rsv_data):
         create_data("reservations",rsv_data)
     def change_reservation(rsv_data):
-        pass
+        change_data()
 
     def delete_reservation(rsv_data):
         delete_data("reservations",id)
 
-# print(get_item_db("username",'t',"users"))

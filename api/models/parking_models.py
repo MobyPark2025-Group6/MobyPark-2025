@@ -3,10 +3,18 @@ from typing import Optional
 from datetime import datetime
 
 class ParkingLotCreate(BaseModel):
+    id: int
     name: str
     location: str
     capacity: int
-    hourly_rate: float
+    adress : str 
+    reserved : int
+    tariff : float 
+    day_tariff: float
+    created_at : datetime
+    lat : float
+    lng : float
+
 
 class SessionStart(BaseModel):
     licenseplate: str

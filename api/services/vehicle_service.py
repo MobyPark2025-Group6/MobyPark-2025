@@ -16,35 +16,28 @@ class VehicleService:
         """getUserVehicleIDs"""
         # From Vehicles get all for where the user_id == session user_id
         uvehicles = get_item_db('user_id',session_user['id'],"vehicles")
- 
         id_only = [v['id'] for v in uvehicles]
         return id_only
         
     
     @staticmethod
-    def getUserVehicle(session_user : User, vid :str ):
+    def getUserVehicle(vid :str ):
         """getUserVehicle"""
-        vehicles = load_data_db_table("vehicles")
-        uvehicles = [v for v in vehicles if v["id"] == vid]
-        return uvehicles
+        return get_item_db("id",vid,"vehicles")
         
     @staticmethod 
     def liscensce_plate_for_id(vid: str):
-        vehicles = load_data_db_table("vehicles")
-        return [v['license_plate'] for v in vehicles if v["id"] == vid]
+        return get_item_db("id",vid,"vehicles")[0]['license_plate']
+
        
     @staticmethod
     def getUserVehicles(username : str, token):
 
-        ValidationService.validate_session_token(token)
-        vehicles = load_data_db_table("vehicles")
-    
         id = UserService.get_user_by_username(username)['id']
-
-        uvehicles = [v for v in vehicles if v["user_id"] == id]
-      
-        return uvehicles
+        item = get_item_db("user_id",id,"vehicles")
     
+        return item
+        
     @staticmethod
     def get_vehicle_by_license_plate(license_plate: str, token: str):
         vehicle = get_item_db("license_plate",license_plate,"vehicles")
