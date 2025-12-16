@@ -44,6 +44,11 @@ class VehicleService:
         uvehicles = [v for v in vehicles if v["user_id"] == id]
       
         return uvehicles
+    
+    @staticmethod
+    def get_vehicle_by_license_plate(license_plate: str, token: str):
+        vehicle = get_item_db("license_plate",license_plate,"vehicles")
+        return Vehicle(**vehicle[0]) if vehicle else None
         
     @staticmethod
     def checkForVehicle(session_user : User , Vid : str):

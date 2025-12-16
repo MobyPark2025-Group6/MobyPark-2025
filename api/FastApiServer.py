@@ -6,7 +6,7 @@ from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
-from models.reservation_models import ReservationRegister
+from models.reservation_models import ReservationRegister, ReservationOut
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.reservation_service import ReservationService
@@ -304,25 +304,6 @@ async def update_payment(transaction_id: str, update: PaymentUpdate, token: Opti
     except PermissionError:
         raise HTTPException(status_code=401, detail="Validation failed")
 
-@app.get("/reservations/{uid}", tags=["Reservations"])
-async def get_reservations(
-     uid : int,
-     authorization: Annotated[Optional[str], Header()] = None
-):
-    """Get user's parking reservations (Coming Soon)"""
-    return ReservationService.get_reservations_list(uid, authorization)
-
-
-@app.post("/reservations", tags=["Reservations"])
-async def create_reservation(
-    reservation_info : ReservationRegister,
-    authorization: Annotated[Optional[str], Header()] = None
-):
-    """
-        Create a new parking reservation 
-    """
-
-    return ReservationService.create_reservation(reservation_info, authorization)
 
 @app.get("/vehicles/{vehicle_id}/reservations", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicle_id_reservations(
@@ -331,7 +312,7 @@ async def get_vehicle_id_reservations(
     
 
     """
-    Acquire all reservations for a vehicle ID 
+    Acquire all reservations for a vehicle ID deze check
     """
     return VehicleService.get_vehicle_reservations(token, vehicle_id)
 
@@ -343,6 +324,25 @@ async def get_vehicle_id_history(
     Acquire all history for a vehicle by ID (currently none functional)
     """
     return  VehicleService.get_vehicle_history(token, vehicle_id) 
+
+@app.get("/vehicle", response_model=List[Vehicle], tags=["Vehicles"])
+async def get_vehicles(
+    token: Optional[str] = Depends(get_token)):
+    """
+    Acquire all vehicles for the logged-in user
+    """
+    return VehicleService.getUserVehicles(None, token)
+
+@app.get("/vehicle/{license_plate}", response_model=Vehicle, tags=["Vehicles"])
+async def get_vehicle_by_license_plate(
+    license_plate : str,
+    token: Optional[str] = Depends(get_token)):
+    """
+    Acquire a vehicle by its license plate (Admin only)
+    
+    Requires Bearer token in Authorization header with admin privileges.
+    """
+    return VehicleService.get_vehicle_by_license_plate(license_plate, token)
 
 @app.get("/vehicles/{user_name}", response_model=SessionResponse, tags=["Vehicles"])
 async def get_vehicles(
@@ -477,27 +477,25 @@ async def delete_parking_session(
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
 
-@app.get("/reservations/{res_id}", tags=["Reservations"])
-async def get_reservations(
-        res_id: str,
-        token: Optional[str] = Depends(get_token)
-    ):
-    """Get reservation details by reservation ID
-
-    Requires Bearer token in Authorization header.
+@app.get("/reservations/{res_id}", response_model=ReservationOut, tags=["Reservations"]) 
+async def get_reservation_by_id(
+    res_id : str,
+    token: Optional[str] = Depends(get_token)):
     """
-    return ReservationService.get_reservation(res_id, token)
-
-@app.post("/reservations", tags=["Reservations"])
-async def create_reservation(
-        reservation_data: ReservationRegister,
-        token: Optional[str] = Depends(get_token)
-    ):
-    """Create a new reservation
-    
-    Requires Bearer token in Authorization header.
+    Acquire a reservation by its ID
     """
-    return ReservationService.create_reservation(reservation_data, token)
+    return ReservationService.get_reservation(res_id, token)      
+
+# @app.delete("/reservations/{res_id}", response_model=dict, tags=["Reservations"])
+# async def delete_reservation_by_id(
+#     res_id : str,
+#     token: Optional[str] = Depends(get_token)):
+#     """
+#     Delete a reservation by its ID
+#     """
+#     return ReservationService.delete_reservation_by_id(res_id, token)
+
+
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)
