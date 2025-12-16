@@ -130,11 +130,7 @@ class ParkingService:
         session_user = ParkingService.validate_session_token(token)        
         # Validate admin access
         ParkingService.validate_admin_access(session_user)        
-        # Load existing parking lots
-        # parking_lots = load_data_db_table("parking_lots")        
-        # Create new parking lot ID
-        # new_lot_id = str(len(parking_lots) + 1)
-        # Add new parking lot
+
 
 
         new_lot = {
