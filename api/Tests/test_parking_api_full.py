@@ -79,7 +79,7 @@ def test_get_parking_lot(mock_service, auth_header):
     assert resp.json()["parking_lot_id"] == "1"
 
 @patch("services.parking_service.ParkingService.validate_session_token")
-@patch("services.parking_service.load_parking_lot_data")
+@patch("services.parking_service.load_data_db_table")
 @patch("services.parking_service.save_parking_lot_data")
 def test_admin_update_parking_lot(mock_save, mock_load, mock_validate):
     # Mock admin user
@@ -223,7 +223,7 @@ def test_normal_user_permissions(mock_get_session, user, expected_status, auth_h
         assert resp.status_code == expected_status
 
 @patch("services.parking_service.get_session")
-@patch("services.parking_service.load_parking_lot_data")
+@patch("services.parking_service.load_data_db_table")
 @patch("services.parking_service.save_parking_lot_data")
 @patch("services.parking_service.load_json")
 @patch("services.parking_service.save_data")
@@ -270,7 +270,7 @@ def test_session_errors(mock_load, mock_validate, method, session_data, session_
         getattr(ParkingService, method)("1", session_obj, token="token")
     assert expected_msg in str(exc.value)
 
-@patch("services.parking_service.load_parking_lot_data")
+@patch("services.parking_service.load_data_db_table")
 def test_get_nonexistent_lot(mock_load):
     mock_load.return_value = {}
     from services.parking_service import ParkingService

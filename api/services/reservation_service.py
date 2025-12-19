@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
-from storage_utils import load_json, save_data, load_reservation_data, save_reservation_data
-from models.reservation_models import ReservationRegister
+from storage_utils import create_data, delete_data, load_json, save_data, load_data_db_table, save_reservation_data, get_item_db
+from models.reservation_models import ReservationRegister, ReservationResponse, ReservationOut
 
 class ReservationService:
     # post
@@ -24,7 +24,7 @@ class ReservationService:
                 reservation_data.user_id = session_user["id"]
 
         # Load existing reservations
-        reservations = load_reservation_data()
+        reservations = load_data_db_table("reservations")
 
         # Create new reservation entry
         new_reservation = {
@@ -40,8 +40,7 @@ class ReservationService:
         # Update parkinglots to show reservation
 
         # Save the new reservation
-        reservations.append(new_reservation)
-        save_reservation_data(reservations)
+        create_data("reservations", new_reservation)
 
         return {"status": "Success" ,"reservation": new_reservation}
 
@@ -65,10 +64,9 @@ class ReservationService:
                     detail="Access denied"
                 )
 
-        reservations = load_reservation_data()
+        reservations = load_data_db_table("reservations")
 
-        user_reservations = [res for res in reservations if res["user_id"] == user_id]
-        return {"reservations": user_reservations}
+        return [ReservationRegister(**reservation) for reservation in reservations if reservation["user_id"] == user_id]
     
     @staticmethod
     def get_reservation(res_id: str, token: str) -> Dict[str, Any]:
@@ -76,14 +74,15 @@ class ReservationService:
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
 
-        reservations = load_reservation_data()
-        reservation = next((res for res in reservations if res["id"] == res_id), None)
+        reservations = get_item_db("id", res_id, "reservations")
 
-        if not reservation:
+        if not reservations:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Reservation not found"
             )
+        
+        reservation = reservations[0]
         
         # Ensure the user is getting a reservation for themselves or is an admin
         if not ValidationService.check_valid_admin(session_user):
@@ -92,6 +91,40 @@ class ReservationService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied"
                 )
+            
+        # Transform DB row to API schema (ReservationOut) with datetimes
+        def to_dt(v):
+            if isinstance(v, datetime):
+                return v
+            if isinstance(v, (int, float)):
+                return datetime.fromtimestamp(int(v))
+            if isinstance(v, str):
+                for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+                    try:
+                        return datetime.strptime(v.replace("Z", ""), fmt)
+                    except ValueError:
+                        continue
+            raise HTTPException(status_code=500, detail="Invalid datetime value in reservation")
 
-        return {"reservation": reservation}
+        out = {
+            "id": str(reservation.get("id")) if reservation.get("id") is not None else None,
+            "user_id": str(reservation.get("user_id")),
+            "lot_id": str(reservation.get("parking_lot_id") or reservation.get("lot_id")),
+            "vehicle_id": str(reservation.get("vehicle_id")),
+            "start_time": to_dt(reservation.get("start_time")),
+            "end_time": to_dt(reservation.get("end_time")),
+            "created_at": to_dt(reservation.get("created_at")) if reservation.get("created_at") is not None else None,
+            "cost": float(reservation.get("cost")) if reservation.get("cost") is not None else None,
+            "status": reservation.get("status"),
+        }
+        # Validate and return as ReservationOut dict
+        return ReservationOut(**out).model_dump()
     
+    
+    @staticmethod
+    def delete_reservation(res_id: str, token: str) -> Dict[str, Any]:
+        """Delete a reservation by its ID"""
+        # Validate session token
+        session_user = ValidationService.validate_session_token(token)
+
+        delete_data(res_id, "reservations")

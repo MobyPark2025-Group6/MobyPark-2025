@@ -2,9 +2,20 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
 class PaymentBase(BaseModel):
-    transaction: Optional[str] = None
+    id : int
+    transaction: str
     amount: float
-    coupled_to: Optional[str] = None
+    initiator: Optional[str] = None
+    created_at: str
+    completed: Optional[str] = None
+    date : str 
+    method : str 
+    issuer : str 
+    bank : str 
+    hash : str 
+    session_id : str 
+    parking_lot_id : int 
+
 
 class PaymentCreate(PaymentBase):
     """Used for creating new payments"""
