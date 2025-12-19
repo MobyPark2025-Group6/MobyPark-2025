@@ -1,12 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from storage_utils import  save_data, save_parking_lot_data, load_data_db_table, load_json, delete_data, get_item_db, create_data, change_data
-from session_manager import get_session
+from storage_utils import  create_data, save_parking_lot_data, load_data_db_table, load_json, delete_data, get_item_db, create_data, change_data
+from session_manager import get_session, add_session
 from models.parking_models import (
     ParkingLotBase, SessionStart, SessionStop, 
     SessionResponse, ParkingLotResponse
 )
+import math 
+
 
 # Setup system user voor automatische parkeerregistratie
 system_user = {
@@ -24,11 +26,27 @@ system_token = "system-token"
 if not get_session(system_token):
     add_session(system_token, system_user)
 
+def calculate_rate(minutes, start, pl_tariff,pl_dtariff):
+    start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+    total_minutes = minutes
+    total_days = ((total_minutes / 60) / 24) 
+
+    m_r = (total_minutes/60) * pl_tariff
+
+    # If the amount of days is less then one, return the tariff x minutes
+    if total_days < 1:
+        return m_r
+    else:
+        # Split of the days and the hours, for example math.modf(539.999) would return (0.999, 539.0)
+        hours, days = math.modf(total_days)
+        # The tariff on a day to day basis + the hours remaining x the hourly tariff 
+        return (days * pl_dtariff) + ((hours * 24) * pl_tariff)
+        
 class ParkingService:
     @staticmethod
     def validate_session_token(token: Optional[str]) -> Dict[str, Any]:
         """Validate session token and return user data"""
-        print(f"DEBUG: Received token: '{token}' (type: {type(token)})")  # Debug line
+        # print(f"DEBUG: Received token: '{token}' (type: {type(token)})")  # Debug line
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -36,7 +54,7 @@ class ParkingService:
             )
         
         session_user = get_session(token)
-        print(f"DEBUG: Session lookup result: {session_user}")  # Debug line
+        # print(f"DEBUG: Session lookup result: {session_user}")  # Debug line
         if not session_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,7 +82,8 @@ class ParkingService:
         # sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
         
         # Check if there's already an active session for this license plate
-        filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] != p['started']]
+        filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] == None]
+   
         # filtered_sessions = {
         #     key: value for key, value in sessions.items() 
         #     if (value.get("licenseplate") == session_data.licenseplate and 
@@ -81,10 +100,12 @@ class ParkingService:
         new_session = {
             "parking_lot_id" : lot_id, 
             "licenseplate": session_data.licenseplate,
-            "started": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+            "started": datetime.now().strftime("%y-%m-%d %H:%M:%S"),
             "stopped": None,
             "user": session_user["username"],
-            "price": 0 if session_user.get("hotel_guest") else None
+            "cost": 0 if session_user.get("hotel_guest") else None,
+            "duration_minutes" : 0,
+
         }
         
         # Add session with new ID
@@ -106,30 +127,38 @@ class ParkingService:
         """Stop a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
-        
+        get_sessions_for_plate = get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions')
+        session = [s for s in get_sessions_for_plate if s['stopped'] == 'None' and s['user'] == session_user['username']]
+
         # Load existing sessions for this parking lot
         # sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
         
         # Find active session for this license plate
-        filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] != p['started']]
-        # filtered_sessions = {
-        #     key: value for key, value in sessions.items() 
-        #     if (value.get("licenseplate") == session_data.licenseplate and 
-        #         not value.get('stopped'))
-        # }
+        # filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] == None and p['']]
+        pl = get_item_db('id',lot_id,'parking_lots')[0]
+    
         
-        if len(filtered_sessions) == 0:
+        if len(session) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Cannot stop a session when there is no active session for this license plate"
             )
         
+       
         # Get the first (and should be only) active session
-        session = next(iter(filtered_sessions))
-        
+        session = next(iter(session))
+
         # Update session with stop time
-        session["stopped"] = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+
+        session['stopped'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        session['payment_status'] = "pending"
         
+        session['duration_minutes'] = ((datetime.strptime(session['stopped'], "%Y-%m-%d %H:%M:%S") -  datetime.strptime(session['started'] , "%Y-%m-%d %H:%M:%S") ).total_seconds() / 60.0)
+
+        session['cost'] =  calculate_rate(session['duration_minutes'] , session['started'], float(pl['tariff']), float(pl['daytariff']))
+
+  
         # Save sessions
         change_data('parking_sessions',session,'id')
         
@@ -169,8 +198,6 @@ class ParkingService:
         session_user = ParkingService.validate_session_token(token)        
         # Validate admin access
         ParkingService.validate_admin_access(session_user)        
-
-
 
         new_lot = {
             "name": parking_lot_data.name,
@@ -296,12 +323,5 @@ class ParkingService:
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
 
-        # TODO Removable?
-        # sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
-
-        # if not session_id.isnumeric() or session_id not in sessions:
-        #     raise HTTPException(status_code=400, detail="Valid session ID required")
         delete_data(session_id,'id',"parking_sessions")
-
-
         return {"detail": "Session deleted"}

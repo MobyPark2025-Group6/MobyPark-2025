@@ -1,9 +1,10 @@
 import json
 import csv
 import os
-
+from datetime import datetime, timedelta
 from loaddb import load_data
 import mysql.connector
+import math
 
 import datetime 
 def get_db_connection():
@@ -126,7 +127,7 @@ def load_data_db_table(tablename):
     return content
 
 def get_item_db(Row, Item, TableName):
-    print(Item)
+
     conn = get_db_connection()
 
     cursor = conn.cursor(dictionary=True) 
@@ -179,17 +180,32 @@ def save_vehicle_data(data):
     save_data('data/vehicles.json', data)
 
 def change_data(table,values,condition):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True) 
     columns = list(values.keys())
+  
     cond_val = values[condition]
     values = tuple([v for v in tuple(values.values()) if v != str(cond_val)])
     set_sql = f"""UPDATE {table}\n SET """
+    count = 0
+
     for c in columns:
         if not c == condition:
-            set_string = f"{c} = %s \n "
-            set_sql += set_string
-            
+            if count + 1 != len(columns) - 1:
+                set_string = f"{c} = %s, \n "
+                set_sql += set_string
+                count+=1 
+            else:
+                set_string = f"{c} = %s \n "
+                set_sql += set_string
+                count+=1 
     set_sql+=f"\n WHERE {condition} = {cond_val}"
+   
     cursor.execute(set_sql, values)
+    conn.commit()
+    cursor.close()
+    conn.close()
     
 def create_data(table, values):
     # Backwards-compatible wrapper
@@ -258,4 +274,10 @@ class save_reservation:
 
     def delete_reservation(rsv_data):
         delete_data("reservations",id)
+
+    # else:
+    #     # Split of the days and the hours, for example math.modf(539.999) would return (0.999, 539.0)
+    #     hours, days = math.modf(total_days)
+    #     # The tariff on a day to day basis + the hours remaining x the hourly tariff 
+    #     return (days * pl_dtariff) + ((hours * 24) * pl_tariff)
 

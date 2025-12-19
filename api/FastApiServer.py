@@ -4,7 +4,7 @@ from typing import Annotated, List, Optional
 import uvicorn
 from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
-from models.parking_models import ParkingLotCreate, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
+from models.parking_models import ParkingLotBase, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from models.reservation_models import ReservationRegister, ReservationOut
 from services.user_service import UserService
@@ -119,7 +119,7 @@ async def get_user_vehicles(
 # Parking Lot Management Endpoints
 @app.post("/parking-lots", response_model=ParkingLotResponse, status_code=status.HTTP_201_CREATED, tags=["Parking Lots"])
 async def create_parking_lot(
-    parking_lot_data: ParkingLotCreate,
+    parking_lot_data: ParkingLotBase,
     token: Optional[str] = Depends(get_token)
 ):
     """Create a new parking lot (Admin only)
