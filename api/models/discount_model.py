@@ -1,12 +1,12 @@
 from datetime import datetime
 from pydantic import BaseModel
+from typing import Optional
 
 class DiscountBase(BaseModel):
-    amount : int
-    created_at : str
-    lot_id : str 
+    amount : Optional[int] = None
+    created_at : datetime
+    lot_id : Optional[str]
     code : str 
-
-class DiscountTime(DiscountBase):
-    expiration_date : datetime 
-
+    percentage : Optional[float]
+    expiration_date : Optional[datetime ]
+    user_id : Optional[int]

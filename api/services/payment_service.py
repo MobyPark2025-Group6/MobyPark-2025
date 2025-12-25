@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import Optional, List, Dict
 from session_calculator import generate_payment_hash, generate_transaction_validation_hash
-from storage_utils import load_data_db_table, save_payment_data,delete_data, create_data,get_item_db,change_data
+from storage_utils import load_data_db_table,delete_data, create_data,get_item_db,change_data
 from models.payment_models import PaymentBase, PaymentRefund, PaymentUpdate, PaymentOut
 from services.validation_service import ValidationService
 class PaymentService:
@@ -74,7 +74,7 @@ class PaymentService:
             "hash": generate_transaction_validation_hash(),
         }
         payments.append(refund_entry)
-        save_payment_data(payments)
+        create_data('payments',refund_entry)
         return refund_entry
 
 

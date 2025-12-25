@@ -7,12 +7,13 @@ from models.user_models import UserRegister, UserLogin, LoginResponse, MessageRe
 from models.parking_models import ParkingLotBase, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from models.reservation_models import ReservationRegister, ReservationOut
+from models.discount_model import DiscountBase
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.reservation_service import ReservationService
 from services.vehicle_service import VehicleService
 from services.payment_service import PaymentService
-
+from services.discount_service import DiscountService
 
 # Define tags for API organization
 tags_metadata = [
@@ -40,6 +41,11 @@ tags_metadata = [
         "name": "Reservations",
         "description": "Parking space reservation and booking operations",
     },
+    {
+        "name": "Discounts",
+        "description": "Creation editing and removal of discounts",
+    }
+
 ]
 
 app = FastAPI(
@@ -495,7 +501,62 @@ async def get_reservation_by_id(
 #     """
 #     return ReservationService.delete_reservation_by_id(res_id, token)
 
+@app.post("/discounts/create", response_model=DiscountBase, tags=["Discounts"])
+async def create_discount(
+    discount : DiscountBase,
+    token: Optional[str] = Depends(get_token)):
 
+    """
+
+    Admin only 
+
+    Generates a discount and places it in the db. 
+
+    If the code part of the discount is empty, the system will generate one on its own 
+    
+    """
+    
+    if discount.code :
+            disc = DiscountService.generate_discount_manual(token, discount)
+            return disc
+    disc = DiscountService.generate_discount_automatic(token, discount)
+    return disc
+
+
+@app.put("/discounts/edit/{id}", response_model=DiscountBase, tags=["Discounts"])
+async def edit_discount(
+    id : int, 
+    discount : DiscountBase,
+    token: Optional[str] = Depends(get_token)):
+
+    """
+
+    Admin only 
+
+    Edit a discount based on it's id 
+
+    Leave the values empty that are not to be changed 
+    
+    """
+    disc = DiscountService.edit_discount(token, id, discount)
+    return disc
+    
+@app.delete("/discounts/remove/{id}", response_model=dict, tags=["Discounts"])
+async def remove_discount(
+    id : int, 
+    token: Optional[str] = Depends(get_token)):
+
+    """
+
+    Admin only 
+
+    Delete a discount based on its ID 
+    
+    """
+    DiscountService.delete_discount(token, id)
+    return {"status": "Success", "Discount": id}
+   
+    
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)

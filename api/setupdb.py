@@ -136,6 +136,18 @@ cursor.execute("""
                 )
                 """)
 
+cursor.execute("""
+                CREATE TABLE IF NOT EXISTS discounts (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    amount INT DEFAULT NULL,
+                    created_at DATETIME DEFAULT NULL,
+                    lot_id INT DEFAULT NULL,
+                    code VARCHAR(30) DEFAULT NULL,
+                    percentage DECIMAL(4,2) DEFAULT NULL,
+                    user_id INT DEFAULT NULL,
+                    expiration_date DATETIME DEFAULT NULL
+                )
+                """)
 conn.commit()
 
 def seed_db(cursor):
@@ -306,5 +318,5 @@ def seed_payments_batch():
 
     conn.close()
 
-seed_db(cursor)
+# seed_db(cursor)
 

@@ -27,65 +27,65 @@ def normalize_row(row):
             row[key] = str(value)
     return row
 
-def load_json(filename):
-    try:
-        with open(filename, 'r') as file:
-            data = json.load(file)
-            if isinstance(data, list):
-                return {str(i+1): v for i, v in enumerate(data)}
-            return data
-    except FileNotFoundError:
-        return {}
+# def load_json(filename):
+#     try:
+#         with open(filename, 'r') as file:
+#             data = json.load(file)
+#             if isinstance(data, list):
+#                 return {str(i+1): v for i, v in enumerate(data)}
+#             return data
+#     except FileNotFoundError:
+#         return {}
 
-def write_json(filename, data):
-    with open(filename, 'w') as file:
-        json.dump(data, file, default=str)
+# def write_json(filename, data):
+#     with open(filename, 'w') as file:
+#         json.dump(data, file, default=str)
 
-def load_csv(filename):
-    try:
-        with open(filename, 'r') as file:
-            reader = csv.reader(file)
-            return [row for row in reader]
-    except FileNotFoundError:
-        return []
+# def load_csv(filename):
+#     try:
+#         with open(filename, 'r') as file:
+#             reader = csv.reader(file)
+#             return [row for row in reader]
+#     except FileNotFoundError:
+#         return []
 
-def write_csv(filename, data):
-    with open(filename, 'w', newline='') as file:
-        writer = csv.writer(file)
-        for row in data:
-            writer.writerow(row)
+# def write_csv(filename, data):
+#     with open(filename, 'w', newline='') as file:
+#         writer = csv.writer(file)
+#         for row in data:
+#             writer.writerow(row)
 
-def load_text(filename):
-    try:
-        with open(filename, 'r') as file:
-            return file.readlines()
-    except FileNotFoundError:
-        return []
+# def load_text(filename):
+#     try:
+#         with open(filename, 'r') as file:
+#             return file.readlines()
+#     except FileNotFoundError:
+#         return []
 
-def write_text(filename, data):
-    with open(filename, 'w') as file:
-        for line in data:
-            file.write(line + '\n')
+# def write_text(filename, data):
+#     with open(filename, 'w') as file:
+#         for line in data:
+#             file.write(line + '\n')
 
-def save_data(filename, data):
-    if filename.endswith('.json'):
-        write_json(filename, data)
-    elif filename.endswith('.csv'):
-        write_csv(filename, data)
-    elif filename.endswith('.txt'):
-        write_text(filename, data)
-    else:
-        raise ValueError("Unsupported file format") 
+# def save_data(filename, data):
+#     if filename.endswith('.json'):
+#         write_json(filename, data)
+#     elif filename.endswith('.csv'):
+#         write_csv(filename, data)
+#     elif filename.endswith('.txt'):
+#         write_text(filename, data)
+#     else:
+#         raise ValueError("Unsupported file format") 
 
-def load_data(filename):
-    if filename.endswith('.json'):
-        return load_json(filename)
-    elif filename.endswith('.csv'):
-        return load_csv(filename)
-    elif filename.endswith('.txt'):
-        return load_text(filename)
-    else:
-        return None
+# def load_data(filename):
+#     if filename.endswith('.json'):
+#         return load_json(filename)
+#     elif filename.endswith('.csv'):
+#         return load_csv(filename)
+#     elif filename.endswith('.txt'):
+#         return load_text(filename)
+#     else:
+#         return None
 
 
 def save_record(table: str, data: dict, update_on_duplicate: bool = False) -> int:
@@ -144,40 +144,32 @@ def get_item_db(Row, Item, TableName):
     return content
 
 
-def save_user_data(data):
-    save_data('data/users.json', data)
+# def save_user_data(data):
+#     save_data('data/users.json', data)
 
-def load_parking_lot_data():
-    return load_data('data/parking-lots.json')
+# def load_parking_lot_data():
+#     return load_data('data/parking-lots.json')
 
-def save_parking_lot_data(data):
-    save_data('data/parking-lots.json', data)
+# def save_parking_lot_data(data):
+#     save_data('data/parking-lots.json', data)
 
-def save_reservation_data(data):
-    save_data('data/reservations.json', data)
+# def save_reservation_data(data):
+#     save_data('data/reservations.json', data)
 
-def load_payment_data():
-    # conn = get_db_connection()
-    # cursor = conn.cursor(dictionary=True) 
-    # cursor.execute("SELECT * FROM payments")
-    # rows = cursor.fetchall()
-    # cursor.close()
-    # conn.close()
-    # pys = [normalize_row(row) for row in rows]
-    # return pys
-    return load_json("data/payments")
+# def load_payment_data():
+#     return load_json("data/payments")
 
-def save_payment_data(data):
-    save_data('data/payments.json', data)
+# def save_payment_data(data):
+#     save_data('data/payments.json', data)
 
-def load_discounts_data():
-    return load_data('data/discounts.csv')
+# def load_discounts_data():
+#     return load_data('data/discounts.csv')
 
-def save_discounts_data(data):
-    save_data('data/discounts.csv', data)
+# def save_discounts_data(data):
+#     save_data('data/discounts.csv', data)
 
-def save_vehicle_data(data):
-    save_data('data/vehicles.json', data)
+# def save_vehicle_data(data):
+#     save_data('data/vehicles.json', data)
 
 def change_data(table,values,condition):
 
@@ -185,11 +177,19 @@ def change_data(table,values,condition):
     cursor = conn.cursor(dictionary=True) 
     columns = list(values.keys())
   
+    # value used in WHERE clause
     cond_val = values[condition]
-    values = tuple([v for v in tuple(values.values()) if v != str(cond_val)])
+
+    # keys except the condition key
+    update_keys = [k for k in values.keys() if k != condition]
+
+    # corresponding values (in same order)
+    update_values = [values[k] for k in update_keys]
+
     set_sql = f"""UPDATE {table}\n SET """
     count = 0
-
+    print(columns)
+    print(update_values)
     for c in columns:
         if not c == condition:
             if count + 1 != len(columns) - 1:
@@ -201,22 +201,31 @@ def change_data(table,values,condition):
                 set_sql += set_string
                 count+=1 
     set_sql+=f"\n WHERE {condition} = {cond_val}"
-   
-    cursor.execute(set_sql, values)
+    print(set_sql)
+    print(update_values)
+
+    cursor.execute(set_sql, update_values)
     conn.commit()
     cursor.close()
     conn.close()
     
 def create_data(table, values):
     # Backwards-compatible wrapper
+    print(values)
     return save_record(table, values)
 
 def delete_data(item, Row, table):
         sql =   f"""
                 DELETE FROM {table} 
-                WHERE {Row} = '{item}'
+                WHERE {Row} = {item};
                 """
+        
+        print("SQl")
+        print(sql)
         cursor.execute(sql)
+        conn.commit()
+        cursor.close()
+        conn.close()
 
 class save_vehicle:
 
@@ -274,10 +283,3 @@ class save_reservation:
 
     def delete_reservation(rsv_data):
         delete_data("reservations",id)
-
-    # else:
-    #     # Split of the days and the hours, for example math.modf(539.999) would return (0.999, 539.0)
-    #     hours, days = math.modf(total_days)
-    #     # The tariff on a day to day basis + the hours remaining x the hourly tariff 
-    #     return (days * pl_dtariff) + ((hours * 24) * pl_tariff)
-
