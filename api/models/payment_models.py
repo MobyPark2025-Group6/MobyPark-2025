@@ -13,13 +13,16 @@ class PaymentBase(BaseModel):
     issuer : str 
     bank : str 
     hash : str 
-    session_id : str 
+    session_id : int 
     parking_lot_id : int 
 
 
-class PaymentCreate(PaymentBase):
+class PaymentCreate(BaseModel):
     """Used for creating new payments"""
-    pass
+    parking_lot_id : int 
+    amount : int 
+    license_plate : str 
+    transaction : str 
 
 class PaymentRefund(PaymentBase):
     """Used for refunding payments"""
@@ -29,6 +32,10 @@ class PaymentUpdate(BaseModel):
     """Used for completing transactions"""
     t_data: Dict[str, Any]
     validation: str
+    disc_code : str 
+    method : str 
+    issuer : str 
+    bank : str 
 
 class PaymentOut(BaseModel):
     transaction: str

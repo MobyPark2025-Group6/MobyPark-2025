@@ -34,6 +34,7 @@ def calculate_price(parkinglot, sid, data, is_hotel_guest=False):
 
 
 def generate_payment_hash(sid, data):
+
     return md5(str(sid + data["licenseplate"]).encode("utf-8")).hexdigest()
 
 

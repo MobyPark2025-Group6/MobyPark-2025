@@ -1,10 +1,13 @@
 import json
 import os
+import secrets
+import string
+from fastapi import HTTPException, status
 from datetime import datetime
 from typing import Optional, List, Dict
 from session_calculator import generate_payment_hash, generate_transaction_validation_hash
 from storage_utils import load_data_db_table,delete_data, create_data,get_item_db,change_data
-from models.payment_models import PaymentBase, PaymentRefund, PaymentUpdate, PaymentOut
+from models.payment_models import PaymentBase, PaymentRefund, PaymentUpdate, PaymentOut, PaymentCreate
 from services.validation_service import ValidationService
 class PaymentService:
 
@@ -26,6 +29,7 @@ class PaymentService:
     # Helper utilities
     # --------------------------
     def generate_payment_hash(username: str, timestamp: str):
+        
         return f"PAY-{hash(username + timestamp)}"
 
 
@@ -33,27 +37,42 @@ class PaymentService:
         return f"HASH-{datetime.now().timestamp()}"
 
 
+
     # --------------------------
     # Core business operations
     # --------------------------
 
-    def create_payment(payment: PaymentBase, session_user: dict) -> Dict:
 
-        transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
+    def create_payment(payment: PaymentCreate, session_user: dict) -> Dict:
 
+        transaction_id =payment.transaction or generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
+        chars = string.ascii_uppercase + string.digits
+        issuer_string = ''
+
+        for i in range(0,10):
+            issuer_result = ''.join(secrets.choice(chars) for _ in range(8))
+            return_value = get_item_db('issuer',issuer_result,'payments')
+            if not return_value:
+                issuer_string = issuer_result
+                break
+            if i == 9 and len(issuer_string) < 1:
+                raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many attempts. Please try again later."
+            )
 
         new_payment = {
             "transaction": transaction_id,
             "amount": payment.amount,
             "initiator": session_user["username"],
-            "created_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
-            "completed": False,
-            "date":payment.date,
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "completed": None,
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "method":payment.method,
-            "issuer":payment.issuer,
+            "issuer":issuer_string,
             "bank":payment.bank,
             "hash": generate_transaction_validation_hash(),
-            "session_id":payment.session_id,
+            "session_id":session_user['id'],
             "parking_lot_id":payment.parking_lot_id
         }
         create_data('payments',new_payment)
@@ -69,7 +88,7 @@ class PaymentService:
             "amount": -abs(payment.amount),
             "coupled_to": payment.coupled_to,
             "processed_by": session_user["username"],
-            "created_at": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "completed": False,
             "hash": generate_transaction_validation_hash(),
         }
@@ -87,21 +106,20 @@ class PaymentService:
         if pmnt["hash"] != update.validation:
             raise PermissionError("Validation failed")
 
-        pmnt["completed"] = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        pmnt["t_data"] = update.t_data
-        change_data('payments',pmnt,)
+
+        pmnt["completed"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        pmnt["method"] = update.method
+        pmnt["bank"] = update.bank
+        pmnt["issuer"] = update.issuer
+
+        change_data('payments',pmnt,'transaction')
         return pmnt
 
 
     def get_user_payments(username: str) -> List[Dict]:
-        payments = load_data_db_table("payments")
 
-        while True:
-            for p in payments:
-                print(p)
-                break
-            break
-        return [p for p in payments if p.get("initiator") == username]
+        user_pmnts = get_item_db("initiator",username,"payments")
+        return user_pmnts
 
 
     def get_all_user_payments(admin_session: dict, username: str) -> List[Dict]:
