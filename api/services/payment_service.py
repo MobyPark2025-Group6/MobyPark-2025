@@ -29,13 +29,11 @@ class PaymentService:
     # Helper utilities
     # --------------------------
     def generate_payment_hash(username: str, timestamp: str):
-        
         return f"PAY-{hash(username + timestamp)}"
 
 
     def generate_transaction_validation_hash():
         return f"HASH-{datetime.now().timestamp()}"
-
 
 
     # --------------------------
@@ -44,8 +42,8 @@ class PaymentService:
 
 
     def create_payment(payment: PaymentCreate, session_user: dict) -> Dict:
+        transaction_id = generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
 
-        transaction_id =payment.transaction or generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
         chars = string.ascii_uppercase + string.digits
         issuer_string = ''
 
@@ -60,27 +58,33 @@ class PaymentService:
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many attempts. Please try again later."
             )
-
+        find_session_to_pay =  get_item_db('id', payment.session_id, 'payments')[0]
+        if find_session_to_pay['stopped'] == None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot create a payment for a stil active session, please cancel it first"
+            )
+        
         new_payment = {
             "transaction": transaction_id,
-            "amount": payment.amount,
+            "amount": find_session_to_pay['cost'],
             "initiator": session_user["username"],
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "completed": None,
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "method":payment.method,
-            "issuer":issuer_string,
-            "bank":payment.bank,
+            "method":None,
+            "issuer":None,
+            "bank":None,
             "hash": generate_transaction_validation_hash(),
             "session_id":session_user['id'],
-            "parking_lot_id":payment.parking_lot_id
+            "parking_lot_id":find_session_to_pay['parking_lot_id']
         }
         create_data('payments',new_payment)
         return new_payment
 
 
-    def refund_payment(payment: PaymentRefund, session_user: dict) -> Dict:
-        payments = load_data_db_table("refunds")
+    def refund_payment(payment: PaymentOut, session_user: dict) -> Dict:
+
         transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
 
         refund_entry = {
@@ -92,14 +96,15 @@ class PaymentService:
             "completed": False,
             "hash": generate_transaction_validation_hash(),
         }
-        payments.append(refund_entry)
-        create_data('payments',refund_entry)
+        
+        create_data('refunds',refund_entry)
         return refund_entry
 
 
     def update_payment(transaction_id: str, update: PaymentUpdate) -> Dict:
 
-        pmnt = get_item_db('transaction',transaction_id,'payments')[0]
+        pmnt = get_item_db('id',transaction_id,'payments')
+        pmnt = pmnt [0]
 
         if not pmnt:
             raise ValueError("Payment not found")
@@ -111,13 +116,12 @@ class PaymentService:
         pmnt["method"] = update.method
         pmnt["bank"] = update.bank
         pmnt["issuer"] = update.issuer
-
         change_data('payments',pmnt,'transaction')
+
         return pmnt
 
 
     def get_user_payments(username: str) -> List[Dict]:
-
         user_pmnts = get_item_db("initiator",username,"payments")
         return user_pmnts
 

@@ -260,7 +260,7 @@ async def get_user_payments(username: str, token: Optional[str] = Depends(get_to
         raise HTTPException(status_code=403, detail="Access denied")
 
 
-@app.post("/payments", response_model=dict, status_code=201, tags=["Payments"])
+@app.post("/payments/create", response_model=dict, status_code=201, tags=["Payments"])
 async def create_payment(payment: PaymentCreate, token: Optional[str] = Depends(get_token)):
     """Create a new payment"""
     session = PaymentService.get_session(token)
