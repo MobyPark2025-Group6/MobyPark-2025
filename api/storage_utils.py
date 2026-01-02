@@ -220,8 +220,7 @@ def delete_data(item, Row, table):
                 WHERE {Row} = {item};
                 """
         
-        print("SQl")
-        print(sql)
+
         cursor.execute(sql)
         conn.commit()
         cursor.close()
@@ -269,6 +268,7 @@ class save_parking_lot:
 class save_discount:
     def create_discount(discount_data):
         create_data("discounts",discount_data)
+        
     def change_plt(change_discount):
           change_data()
 

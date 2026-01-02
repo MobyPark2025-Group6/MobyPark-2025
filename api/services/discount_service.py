@@ -10,8 +10,14 @@ import string
 class DiscountService:
     #Will return a string of 10 random letters of various capitalisations 
     @staticmethod
-    def generate_discount_automatic(token, amount : Optional[int] = None , loid : Optional[int] = None , perc : Optional[float] = None , uid : Optional[int] = None , exp_date : Optional[datetime] = None ):
+    def generate_discount_automatic(token, discount):
         #10 tries before relaying an error to the user, to prevent the chance of duplicates causing a rejection of an auto generated discount code 
+        amount = discount.amount 
+        loid = discount.lot_id
+        perc = discount.percentage
+        exp_date = discount.expiration_date
+        uid = discount.user_id
+
         session_user = ValidationService.validate_session_token(token)
         if ValidationService.check_valid_admin(session_user):
             for i in range(0,10) :
@@ -20,13 +26,15 @@ class DiscountService:
                 c = get_item_db('code',code,'discounts')
                 if not c :
                     discount = {
-                        "amount" : amount,
-                        "lot_id" : loid,
+                        "amount" : None if amount == 0 else amount,
+                        "created_at" : datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "lot_id" : None if loid == 0 else loid,
                         "code" : code,
-                        "percentage" : perc,
-                        "user_id" : uid,
-                        "expiration_date" : exp_date 
+                        "percentage" : None if perc == 0 else perc,
+                        "expiration_date" :None if exp_date == None else exp_date,
+                        "user_id" : None if uid == 0 else uid
                     }
+                    print(discount)
                     return create_data('discounts',discount)
                  
             raise HTTPException(
@@ -42,7 +50,8 @@ class DiscountService:
     #Admin chosen discount string 
     @staticmethod
     def generate_discount_manual(token, discount):
- 
+        
+        
         amount = discount.amount 
        
         loid = discount.lot_id
