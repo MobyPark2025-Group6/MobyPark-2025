@@ -326,5 +326,5 @@ def seed_payments_batch():
 
     conn.close()
 
-# create_tables(cursor,conn)
+create_tables(cursor,conn)
 # seed_db(cursor)

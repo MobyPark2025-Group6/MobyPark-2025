@@ -268,6 +268,7 @@ class save_parking_lot:
 class save_discount:
     def create_discount(discount_data):
         create_data("discounts",discount_data)
+        
     def change_plt(change_discount):
           change_data()
 

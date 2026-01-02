@@ -32,8 +32,6 @@ class PaymentRefund(PaymentBase):
 
 class PaymentUpdate(BaseModel):
     """Used for completing transactions"""
-    t_data: Dict[str, Any]
-    validation: str
     disc_code : str 
     method : str 
     issuer : str 
@@ -48,3 +46,4 @@ class PaymentOut(BaseModel):
     completed: Optional[str] = None
     coupled_to: Optional[str] = None
     hash: str
+    license_plate : str 

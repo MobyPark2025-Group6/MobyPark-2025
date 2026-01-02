@@ -160,23 +160,3 @@ class load_data :
                 })
             return rows
 
-# ps = load_data.load_parking_sessions()
-# print(ps[0])
-#  transaction VARCHAR(255) NOT NULL UNIQUE,
-#     amount DECIMAL(12,2) DEFAULT 0,
-#     initiator VARCHAR(255),
-
-#     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-#     completed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-#     date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-#     method VARCHAR(255) NOT NULL,
-#     issuer VARCHAR(255) NOT NULL,
-#     bank VARCHAR(255) NOT NULL,
-#     hash VARCHAR(255) NOT NULL,
-#     session_id INT,
-#     parking_lot_id INT,
-# payments = load_data.load_payments()
-# print(payments[0])
-# # for i in payments:
-# #     if i['transaction'] or i['amount'] or i['issuer'] or ['session_id']== None :
-# #         print(i)

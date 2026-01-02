@@ -85,7 +85,7 @@ class PaymentService:
 
     def refund_payment(payment: PaymentOut, session_user: dict) -> Dict:
 
-        transaction_id = payment.transaction or generate_payment_hash(session_user["username"], str(datetime.now()))
+        transaction_id = generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
 
         refund_entry = {
             "transaction": transaction_id,
@@ -101,23 +101,59 @@ class PaymentService:
         return refund_entry
 
 
-    def update_payment(transaction_id: str, update: PaymentUpdate) -> Dict:
+    def update_payment(transaction_id: str, update: PaymentUpdate, session) -> Dict:
 
-        pmnt = get_item_db('id',transaction_id,'payments')
+        pmnt = get_item_db('id', transaction_id, 'payments')
+        user = get_item_db('username', session["username"], 'users')
+        parking_session
         pmnt = pmnt [0]
 
         if not pmnt:
             raise ValueError("Payment not found")
-        if pmnt["hash"] != update.validation:
-            raise PermissionError("Validation failed")
+        # if pmnt["hash"] != update.validation:
+        #     raise PermissionError("Validation failed")
 
 
         pmnt["completed"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         pmnt["method"] = update.method
         pmnt["bank"] = update.bank
         pmnt["issuer"] = update.issuer
+
+        if update.disc_code != None :
+            disc_code = get_item_db('code', update.disc_code, 'discounts')[0]
+            if(disc_code and disc_code["expiration_date"]):
+
+                # If the discount code has a user_id or a lot_id, ensure the current payment is correct for either 
+                if disc_code["user_id"] != None :
+                    if disc_code["user_id"] != user['id'] : 
+                        raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="The discount codes alloted user id is not compatible with the current users id."
+                    )
+                if disc_code["lot_id"] != None :
+                    if disc_code["lot_id"] != pmnt["parking_lot_id"] : 
+                        raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="The discount codes alloted parking lot id is not compatible with the payment's parking lot id."
+                    )
+                # Remove the discounted value from the current to be payed amount 
+                if disc_code["amount"] != None :
+                    pmnt["amount"] -= disc_code["amount"]
+                elif disc_code["percentage"] != None:
+                    perc = (100 - disc_code["percentage"]) / 100
+                    x = pmnt["amount"]
+                    pmnt["amount"] = x * perc
+                
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Discount code not found."
+                )
+        # Apply the changes to payments and parking_sessions 
         change_data('payments',pmnt,'transaction')
 
+        #TODO CHANGE THE RELATED PARKIGN SESSIONS STATUS TO PAID
+        change_data('parking_sessions',session_id, )
         return pmnt
 
 
