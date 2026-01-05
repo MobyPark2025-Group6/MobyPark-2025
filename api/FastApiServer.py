@@ -486,16 +486,36 @@ async def get_reservation_by_id(
     """
     return ReservationService.get_reservation(res_id, token)      
 
-# @app.delete("/reservations/{res_id}", response_model=dict, tags=["Reservations"])
-# async def delete_reservation_by_id(
-#     res_id : str,
-#     token: Optional[str] = Depends(get_token)):
-#     """
-#     Delete a reservation by its ID
-#     """
-#     return ReservationService.delete_reservation_by_id(res_id, token)
+@app.get("/reservations/{user_id}", tags=["Reservations"])
+async def list_reservations(
+        user_id: str,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Get reservation details by reservation ID
+
+    Requires Bearer token in Authorization header.
+    """
+    return ReservationService.get_reservations_list(user_id, token)
+
+@app.get("/reservations/{res_id}", tags=["Reservations"])
+async def get_reservations(
+        res_id: str,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Get reservation details by reservation ID """
 
 
+
+@app.delete("/reservations/{res_id}", tags=["Reservations"])
+async def delete_reservation(
+        res_id: str,
+        token: Optional[str] = Depends(get_token)
+    ):
+    """Delete a reservation by its ID
+    
+    Requires Bearer token in Authorization header.
+    """
+    return ReservationService.delete_reservation(res_id, token)
 
 if __name__ == "__main__":
     uvicorn.run("FastApiServer:app", host="127.0.0.1", port=8000, reload=True)
