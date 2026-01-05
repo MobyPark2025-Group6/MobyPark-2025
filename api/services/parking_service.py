@@ -1,18 +1,52 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from storage_utils import load_json, save_data, load_parking_lot_data, save_parking_lot_data
-from session_manager import get_session
+from storage_utils import  create_data, save_parking_lot_data, load_data_db_table, load_json, delete_data, get_item_db, create_data, change_data
+from session_manager import get_session, add_session
 from models.parking_models import (
-    ParkingLotCreate, SessionStart, SessionStop, 
+    ParkingLotBase, SessionStart, SessionStop, 
     SessionResponse, ParkingLotResponse
 )
+import math 
 
+
+# Setup system user voor automatische parkeerregistratie
+system_user = {
+    "id": "0",
+    "username": "system",
+    "role": "ADMIN",
+    "hotel_guest": False,
+    "active": True,
+    "created_at": "2025-12-09"
+}
+
+system_token = "system-token"
+
+# Voeg system user toe als hij nog niet bestaat
+if not get_session(system_token):
+    add_session(system_token, system_user)
+
+def calculate_rate(minutes, start, pl_tariff,pl_dtariff):
+    start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+    total_minutes = minutes
+    total_days = ((total_minutes / 60) / 24) 
+
+    m_r = (total_minutes/60) * pl_tariff
+
+    # If the amount of days is less then one, return the tariff x minutes
+    if total_days < 1:
+        return m_r
+    else:
+        # Split of the days and the hours, for example math.modf(539.999) would return (0.999, 539.0)
+        hours, days = math.modf(total_days)
+        # The tariff on a day to day basis + the hours remaining x the hourly tariff 
+        return (days * pl_dtariff) + ((hours * 24) * pl_tariff)
+        
 class ParkingService:
     @staticmethod
     def validate_session_token(token: Optional[str]) -> Dict[str, Any]:
         """Validate session token and return user data"""
-        print(f"DEBUG: Received token: '{token}' (type: {type(token)})")  # Debug line
+        # print(f"DEBUG: Received token: '{token}' (type: {type(token)})")  # Debug line
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -20,7 +54,7 @@ class ParkingService:
             )
         
         session_user = get_session(token)
-        print(f"DEBUG: Session lookup result: {session_user}")  # Debug line
+        # print(f"DEBUG: Session lookup result: {session_user}")  # Debug line
         if not session_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -45,14 +79,16 @@ class ParkingService:
         session_user = ParkingService.validate_session_token(token)
         
         # Load existing sessions for this parking lot
-        sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
+        # sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
         
         # Check if there's already an active session for this license plate
-        filtered_sessions = {
-            key: value for key, value in sessions.items() 
-            if (value.get("licenseplate") == session_data.licenseplate and 
-                not value.get('stopped'))
-        }
+        filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] == None]
+   
+        # filtered_sessions = {
+        #     key: value for key, value in sessions.items() 
+        #     if (value.get("licenseplate") == session_data.licenseplate and 
+        #         not value.get('stopped'))
+        # }
         
         if len(filtered_sessions) > 0:
             raise HTTPException(
@@ -62,19 +98,23 @@ class ParkingService:
         
         # Create new session
         new_session = {
+            "parking_lot_id" : lot_id, 
             "licenseplate": session_data.licenseplate,
-            "started": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+            "started": datetime.now().strftime("%y-%m-%d %H:%M:%S"),
             "stopped": None,
             "user": session_user["username"],
-            "price": 0 if session_user.get("hotel_guest") else None
+            "cost": 0 if session_user.get("hotel_guest") else None,
+            "duration_minutes" : 0,
+
         }
         
         # Add session with new ID
-        session_id = str(len(sessions) + 1)
-        sessions[session_id] = new_session
+        # session_id = str(len(sessions) + 1)
+        # sessions[session_id] = new_session
         
+        create_data("parking_sessions",new_session)
         # Save sessions
-        save_data(f'data/pdata/p{lot_id}-sessions.json', sessions)
+        # save_data(f'data/pdata/p{lot_id}-sessions.json', sessions)
         
         return SessionResponse(
             message="Session started successfully",
@@ -87,75 +127,111 @@ class ParkingService:
         """Stop a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
-        
+        get_sessions_for_plate = get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions')
+        session = [s for s in get_sessions_for_plate if s['stopped'] == 'None' and s['user'] == session_user['username']]
+
         # Load existing sessions for this parking lot
-        sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
+        # sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
         
         # Find active session for this license plate
-        filtered_sessions = {
-            key: value for key, value in sessions.items() 
-            if (value.get("licenseplate") == session_data.licenseplate and 
-                not value.get('stopped'))
-        }
+        # filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] == None and p['']]
+        pl = get_item_db('id',lot_id,'parking_lots')[0]
+    
         
-        if len(filtered_sessions) == 0:
+        if len(session) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Cannot stop a session when there is no active session for this license plate"
             )
         
+       
         # Get the first (and should be only) active session
-        session_id = next(iter(filtered_sessions))
-        
+        session = next(iter(session))
+
         # Update session with stop time
-        sessions[session_id]["stopped"] = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+
+        session['stopped'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        session['payment_status'] = "pending"
         
+        session['duration_minutes'] = ((datetime.strptime(session['stopped'], "%Y-%m-%d %H:%M:%S") -  datetime.strptime(session['started'] , "%Y-%m-%d %H:%M:%S") ).total_seconds() / 60.0)
+
+        session['cost'] =  calculate_rate(session['duration_minutes'] , session['started'], float(pl['tariff']), float(pl['daytariff']))
+
+  
         # Save sessions
-        save_data(f'data/pdata/p{lot_id}-sessions.json', sessions)
+        change_data('parking_sessions',session,'id')
         
         return SessionResponse(
             message="Session stopped successfully",
             licenseplate=session_data.licenseplate,
-            stopped=sessions[session_id]["stopped"]
+            stopped=session["stopped"]
         )
-    
+
+    # -------------------------
+    # Auto system user parking
+    # -------------------------
+
     @staticmethod
-    def create_parking_lot(parking_lot_data: ParkingLotCreate, token: Optional[str]) -> ParkingLotResponse:
+    def auto_start_parking(lot_id: str, license_plate: str) -> SessionResponse:
+        """Start automatisch een parkeerregistratie voor system user"""
+        return ParkingService.start_parking_session(
+            lot_id,
+            SessionStart(licenseplate=license_plate),
+            system_token  # gebruikt de system user
+        )
+
+    @staticmethod
+    def auto_stop_parking(lot_id: str, license_plate: str) -> SessionResponse:
+        """Stop automatisch een parkeerregistratie voor system user"""
+        return ParkingService.stop_parking_session(
+            lot_id,
+            SessionStop(licenseplate=license_plate),
+            system_token
+        )
+
+
+    @staticmethod
+    def create_parking_lot(parking_lot_data: ParkingLotBase, token: Optional[str]) -> ParkingLotResponse:
         """Create a new parking lot (Admin only)"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)        
         # Validate admin access
         ParkingService.validate_admin_access(session_user)        
-        # Load existing parking lots
-        parking_lots = load_parking_lot_data()        
-        # Create new parking lot ID
-        new_lot_id = str(len(parking_lots) + 1)
-        # Add new parking lot
-        parking_lots[new_lot_id] = {
+
+        new_lot = {
             "name": parking_lot_data.name,
             "location": parking_lot_data.location,
             "capacity": parking_lot_data.capacity,
-            "hourly_rate": parking_lot_data.hourly_rate
+            "adress": parking_lot_data.adress,
+            "reserved":parking_lot_data.reserved,
+            "tariff":parking_lot_data.tariff,
+            "day_tariff":parking_lot_data.day_tariff,
+            "created_at":parking_lot_data.created_at,
+            "lat":parking_lot_data.lat,
+            "lng":parking_lot_data.lng
+
+
         }
         # Save parking lots
-        save_parking_lot_data(parking_lots)
+        create_data('parking_lots',new_lot)
         return ParkingLotResponse(
             message="Parking lot created successfully",
-            parking_lot_id=new_lot_id
+            parking_lot_name=new_lot["name"]
         )
     
     @staticmethod
     def list_parking_lots(token: Optional[str]):
         # Load and optionally filter data
-        parking_lots = load_parking_lot_data()
+        parking_lots = load_data_db_table("parking_lots")
         return parking_lots
 
     @staticmethod
     def get_parking_lot(lot_id: str, token: Optional[str]):
-        parking_lots = load_parking_lot_data()
-        if lot_id not in parking_lots:
+        parking_lot = get_item_db('id',lot_id,'parking_lots')
+        if not parking_lot:
             raise HTTPException(status_code=404, detail="Parking lot not found")
-        return parking_lots[lot_id]
+        return parking_lot
 
     @staticmethod
     def list_parking_sessions(lot_id: str, token: Optional[str]):
@@ -163,7 +239,7 @@ class ParkingService:
         if not session_user:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
 
-        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+        sessions = get_item_db('id',lot_id,'parking_lots')
         if session_user["role"] == "ADMIN":
             return sessions
 
@@ -175,12 +251,12 @@ class ParkingService:
         if not session_user:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
 
-        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
+        sessions = get_item_db('id',lot_id,'parking_lots')
 
         if session_id not in sessions:
             raise HTTPException(status_code=404, detail="Session not found")
 
-        session = sessions[session_id]
+        session = [s for s in sessions if s['id'] == session_id]
 
         if session_user["role"] != "ADMIN" and session["user"] != session_user["username"]:
             raise HTTPException(status_code=403, detail="Access denied")
@@ -193,14 +269,14 @@ class ParkingService:
         session_user = ParkingService.validate_session_token(token)
         ParkingService.validate_admin_access(session_user)
 
-        parking_lots = load_parking_lot_data()
-        if lot_id not in parking_lots:
+        parking_lots = get_item_db('id',lot_id,'parking_lots')
+        if parking_lots:
             raise HTTPException(status_code=404, detail="Parking lot not found")
-
-        allowed_fields = ["name", "location", "capacity", "hourly_rate"]
-        for key in allowed_fields:
-            if key in updates:
-                parking_lots[lot_id][key] = updates[key]
+        change_data('parking_lots',updates,'id')
+        # allowed_fields = ["name", "location", "capacity", "hourly_rate"]
+        # for key in allowed_fields:
+        #     if key in updates:
+        #         parking_lots[lot_id][key] = updates[key]
 
         save_parking_lot_data(parking_lots)
         return {"message": "Parking lot updated successfully", "parking_lot_id": lot_id}
@@ -214,20 +290,15 @@ class ParkingService:
         ParkingService.validate_admin_access(session_user)
 
         # Laad bestaande sessies
-        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
-        if session_id not in sessions:
+        
+        session = get_item_db('id',session_id,'parking_sessions')
+        if session:
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Alleen toegestane velden updaten
-        allowed_fields = ["licenseplate", "started", "stopped", "user"]
-        for key in allowed_fields:
-            if key in updates:
-                sessions[session_id][key] = updates[key]
+        change_data('parking_sessions',session[0],'id')
 
-        # Opslaan
-        save_data(f"data/pdata/p{lot_id}-sessions.json", sessions)
-
-        return sessions[session_id]
+        return session
 
     @staticmethod
     def delete_parking_lot(lot_id: str, token: Optional[str]):
@@ -236,13 +307,12 @@ class ParkingService:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
-
-        parking_lots = load_parking_lot_data()
-        if lot_id not in parking_lots:
-            raise HTTPException(status_code=404, detail="Parking lot not found")
-
-        del parking_lots[lot_id]
-        save_parking_lot_data(parking_lots)
+        # TODO Removable?
+        # parking_lots = load_data_db_table("parking_lots")
+        # if lot_id not in parking_lots:
+        #     raise HTTPException(status_code=404, detail="Parking lot not found")
+        delete_data(lot_id,'id',"parking_lots")
+  
         return {"detail": "Parking lot deleted"}
 
     @staticmethod
@@ -253,11 +323,5 @@ class ParkingService:
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
 
-        sessions = load_json(f"data/pdata/p{lot_id}-sessions.json")
-
-        if not session_id.isnumeric() or session_id not in sessions:
-            raise HTTPException(status_code=400, detail="Valid session ID required")
-
-        del sessions[session_id]
-        save_data(f"data/pdata/p{lot_id}-sessions.json", sessions)
+        delete_data(session_id,'id',"parking_sessions")
         return {"detail": "Session deleted"}

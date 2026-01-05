@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from unittest.mock import patch
 from models.vehicle_models import Vehicle
-from storage_utils import load_vehicle_data,  save_vehicle_data
+from storage_utils import load_data_db_table, save_vehicle_data
 from services.vehicle_service import VehicleService
 from services.user_service import *
 from models.user_models import * 
@@ -52,7 +52,7 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
 
     with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
-         patch("services.vehicle_service.load_parking_lot_data") as mock_load_parking:
+         patch("services.vehicle_service.load_data_db_table") as mock_load_parking:
 
         # Make the validator accept any token and return a session user dict
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
@@ -78,18 +78,38 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
         mock_load_parking.assert_called_once()
 
 
+
+# @staticmethod
+#     def get_vehicle_history(token : str, vid : str): 
+#         """Get the vehicle history"""
+#         session_user = ValidationService.validate_session_token(token)
+#         VehicleService.checkForVehicle(session_user, vid)
+#         lp = VehicleService.liscensce_plate_for_id(vid)
+#         ssn = load_data.load_parking_sessions()
+#         return [s for s in ssn if s["licenseplate"] == lp]
+
 def test_get_vehicle_id_history_mock(auth_header):
     token = "fake-token-1"
     vid = "1"
 
 
     with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
+         patch("services.vehicle_service.load_data.load_parking_sessions") as mock_load, \
+         patch("services.vehicle_service.VehicleService.liscensce_plate_for_id") as mock_plate_load, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check :
         
+        mock_load.return_value = [
+                     {"id":"1","parking_lot_id":"1","licenseplate":"JO-227-4","started":"2021-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"},
+                     {"id":"2","parking_lot_id":"1","licenseplate":"JO-110-4","started":"2022-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"},
+                     {"id":"3","parking_lot_id":"1","licenseplate":"76-ACB-7","started":"2023-03-25T20:29:47Z","stopped":"2020-03-26T05:10:47Z","user":"natasjadewit","duration_minutes":521,"cost":16.5,"payment_status":"paid"}
+                     ]
+        
+        mock_plate_load.return_value= "76-ACB-7"
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
         mock_check.return_value = None
 
         result = VehicleService.get_vehicle_history(token, vid)
+    
         assert isinstance(result, list)
         assert len(result) >= 1                   # only one item matches vehicle_id == "1"
       
@@ -146,7 +166,7 @@ def test_get_all_vehicles_admin_lookup():
 
 def test_change_vehicle_mocked():
     token = "fake-token"
-    with patch("services.vehicle_service.load_vehicle_data") as mock_load, \
+    with patch("services.vehicle_service.load_data_db_table") as mock_load, \
      patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
      patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_vehicle_check , \
      patch("services.vehicle_service.save_vehicle_data") as mock_save : 
@@ -162,7 +182,7 @@ def test_change_vehicle_mocked():
             {"id": "3", "user_id": "2", "license_plate": "76-QAU-7", "make": "CAR", "model": "213", "color": "Yellow", "year": 1800, "created_at": "2024-02-13"},
             {"id": "4", "user_id": "3", "license_plate": "76-PSL-7", "make": "Peugeot", "model": "3028", "color": "Red", "year": 2000, "created_at": "2024-01-13"}
         ]
-        resp = VehicleService.ChangeVehicle(token, "1", updated_vehicle_data)
+        resp = VehicleService.change_vehicle(token, "1", updated_vehicle_data)
         assert resp["status"] == "Success"
         assert updated_vehicle_data in mock_save.return_value
         mock_save.assert_called_once()
@@ -175,7 +195,7 @@ def test_create_vehicle_mocked():
     with patch("services.vehicle_service.VehicleService.check_for_liscense_id") as mock_liscenseid_check, \
          patch("services.vehicle_service.VehicleService.check_for_parameters") as mock_param_check, \
          patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
-         patch("services.vehicle_service.load_json") as mock_vehicle_load, \
+         patch("services.vehicle_service.load_data_db_table") as mock_vehicle_load, \
          patch("services.vehicle_service.save_vehicle_data") as mock_save : 
             
             mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
@@ -191,7 +211,7 @@ def test_create_vehicle_mocked():
 
             ]
 
-            resp = VehicleService.CreateVehicle(token, new_vehicle)
+            resp = VehicleService.create_vehicle(token, new_vehicle)
             assert resp["status"] == "Success"
             mock_validate.assert_called_once_with(token)
 
@@ -214,7 +234,7 @@ def test_delete_vehicle_mocked():
 
     with patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
-         patch("services.vehicle_service.load_vehicle_data") as mock_load, \
+         patch("services.vehicle_service.load_data_db_table") as mock_load, \
          patch("services.vehicle_service.save_vehicle_data") as mock_save:
 
         # First load returns the initial list, second load (after save) should return remaining
@@ -224,7 +244,7 @@ def test_delete_vehicle_mocked():
         mock_check.return_value = None
         mock_save.return_value = None
 
-        resp = VehicleService.DeleteVehicle(token, fake_vehicle_id)
+        resp = VehicleService.delete_vehicle(token, fake_vehicle_id)
 
         assert resp["Status"] == "Deleted"
         mock_validate.assert_called_once_with(token)
