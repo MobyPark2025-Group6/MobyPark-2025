@@ -3,7 +3,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
-from storage_utils import create_data, load_data_db_table,delete_data, get_item_db, create_data
+from storage_utils import create_data, load_data_db_table,delete_data, get_item_db, change_data
 from session_manager import add_session,get_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
 from argon2 import PasswordHasher
@@ -112,7 +112,7 @@ class UserService:
                 detail="User not found"
             )
         
-        save_user_data(users)
+        change_data('users',user,'id')
         return MessageResponse(message="User updated successfully")
     
     @staticmethod
@@ -178,7 +178,7 @@ class UserService:
                 user['email'] = user_data.email
                 user['phone'] = user_data.phone
                 user['birth_year'] = user_data.birth_year
-                save_user_data(users)
+                change_data('users',user,'id')
                 return MessageResponse(message="User updated successfully")
         
         raise HTTPException(

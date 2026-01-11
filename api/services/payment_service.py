@@ -105,7 +105,8 @@ class PaymentService:
 
         pmnt = get_item_db('id', transaction_id, 'payments')
         user = get_item_db('username', session["username"], 'users')
-        parking_session
+        parking_session = get_item_db('id', pmnt["session_id"], 'parking_sessions')
+
         pmnt = pmnt [0]
 
         if not pmnt:
@@ -136,9 +137,11 @@ class PaymentService:
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="The discount codes alloted parking lot id is not compatible with the payment's parking lot id."
                     )
+
                 # Remove the discounted value from the current to be payed amount 
                 if disc_code["amount"] != None :
                     pmnt["amount"] -= disc_code["amount"]
+
                 elif disc_code["percentage"] != None:
                     perc = (100 - disc_code["percentage"]) / 100
                     x = pmnt["amount"]
@@ -149,11 +152,13 @@ class PaymentService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Discount code not found."
                 )
+            
         # Apply the changes to payments and parking_sessions 
         change_data('payments',pmnt,'transaction')
-
-        #TODO CHANGE THE RELATED PARKIGN SESSIONS STATUS TO PAID
-        change_data('parking_sessions',session_id, )
+        
+        parking_session['status'] = 'paid'
+        
+        change_data('parking_sessions', parking_session, 'id')
         return pmnt
 
 
