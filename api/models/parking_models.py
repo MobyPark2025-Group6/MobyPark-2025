@@ -27,6 +27,7 @@ class SessionResponse(BaseModel):
     licenseplate: str
     started: Optional[str] = None
     stopped: Optional[str] = None
+    cost: Optional[float] = None
 
 class ParkingLotResponse(BaseModel):
     message: str

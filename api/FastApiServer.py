@@ -153,6 +153,7 @@ async def start_parking_session(
 async def stop_parking_session(
     lot_id: str,
     session_data: SessionStop,
+    discount_code: Optional[str] = None,
     token: Optional[str] = Depends(get_token)
 ):
     """Stop a parking session for a vehicle in the specified parking lot
@@ -160,7 +161,7 @@ async def stop_parking_session(
     Requires Bearer token in Authorization header.
     Ends an active parking session by setting the stop time.
     """
-    return ParkingService.stop_parking_session(lot_id, session_data, token)
+    return ParkingService.stop_parking_session(lot_id, session_data, discount_code, token)
 
 @app.get("/parking-lots", response_model=list[ParkingLotResponse])
 async def list_parking_lots(
