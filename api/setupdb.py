@@ -162,57 +162,57 @@ def create_tables(cursor, conn):
     conn.commit()
 
 def seed_db(cursor):
-    # pl_data = load_data.load_parkinglots()
-    # rs_data = load_data.load_reservations()
-    # vs_data = load_data.load_vehicles()
-    # us_data = load_data.load_users()
+    pl_data = load_data.load_parkinglots()
+    rs_data = load_data.load_reservations()
+    vs_data = load_data.load_vehicles()
+    us_data = load_data.load_users()
 
-  # Seed users
-    # for us in us_data:
-    #     cursor.execute(
-    #         """
-    #         INSERT INTO users
-    #         (username, password, name, email, phone, role, created_at, birth_year, active)
-    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    #         """,
-    #         (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
-    #         us["created_at"], us["birth_year"], us["active"])
-    #     )
-    # print("Seeded users (duplicates ignored)")
-    # conn.commit() 
+#   Seed users
+    for us in us_data:
+        cursor.execute(
+            """
+            INSERT INTO users
+            (username, password, name, email, phone, role, created_at, birth_year, active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
+            us["created_at"], us["birth_year"], us["active"])
+        )
+    print("Seeded users (duplicates ignored)")
+    conn.commit() 
     
     # Seed parkinglots
-    # for pl in pl_data:
-    #     cursor.execute(
-    #             "INSERT INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
-    #             (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
-    #         )
-    # print("Seeded parking_lots:", pl["name"])
-    # conn.commit() 
+    for pl in pl_data:
+        cursor.execute(
+                "INSERT INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
+                (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
+            )
+    print("Seeded parking_lots:", pl["name"])
+    conn.commit() 
     
-    # # Seed reservations
-    # for rs in rs_data:
-    #     cursor.execute(
-    #             "INSERT INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-    #             (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
-    #         )
-    # print("Seeded reservations")
-    # conn.commit() 
+    # Seed reservations
+    for rs in rs_data:
+        cursor.execute(
+                "INSERT INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
+            )
+    print("Seeded reservations")
+    conn.commit() 
     
     # Seed vehicles
-    # for vs in vs_data:
-    #     cursor.execute(
-    #             "INSERT INTO vehicles (user_id, license_plate, make, model, color, year, created_at) VALUES (%s, %s, %s, %s, %s, %s,  %s)",
-    #             (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["year"], vs["created_at"]) 
-    #         )
-    # print("Seeded vehicles")
-    # conn.commit() 
+    for vs in vs_data:
+        cursor.execute(
+                "INSERT INTO vehicles (user_id, license_plate, make, model, color, year, created_at) VALUES (%s, %s, %s, %s, %s, %s,  %s)",
+                (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["year"], vs["created_at"]) 
+            )
+    print("Seeded vehicles")
+    conn.commit() 
 
     # Seed parking sessions
-    # seed_parking_sessions_batch
-    # print("Seeded parking sessions")
+    seed_parking_sessions_batch
+    print("Seeded parking sessions")
 
-     # Seed Payments
+    #  Seed Payments
     seed_payments_batch()
     print("Seeded payments")
 
