@@ -26,7 +26,7 @@ system_token = "system-token"
 if not get_session(system_token):
     add_session(system_token, system_user)
 
-def calculate_rate(minutes, start, pl_tariff,pl_dtariff):
+def calculate_rate(minutes, start, pl_tariff,pl_dtariff,):
     start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
     total_minutes = minutes
     total_days = ((total_minutes / 60) / 24) 
@@ -123,7 +123,7 @@ class ParkingService:
         )
     
     @staticmethod
-    def stop_parking_session(lot_id: str, session_data: SessionStop, token: Optional[str]) -> SessionResponse:
+    def stop_parking_session(lot_id: str, session_data: SessionStop, discount_code: Optional[str], token: Optional[str]) -> SessionResponse:
         """Stop a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
@@ -156,16 +156,21 @@ class ParkingService:
         
         session['duration_minutes'] = ((datetime.strptime(session['stopped'], "%Y-%m-%d %H:%M:%S") -  datetime.strptime(session['started'] , "%Y-%m-%d %H:%M:%S") ).total_seconds() / 60.0)
 
-        session['cost'] =  calculate_rate(session['duration_minutes'] , session['started'], float(pl['tariff']), float(pl['daytariff']))
+        # check if discount code is valid and apply discount if so
+        findDiscount = get_item_db('code',discount_code,'discounts')
+        if findDiscount and findDiscount[0]['expiration_date'] >= datetime.now().strftime("%Y-%m-%d") and findDiscount[0]['lot_id'] == lot_id:
+            session['cost'] =  calculate_rate(session['duration_minutes'] , session['started'], float(pl['tariff']), float(pl['daytariff'])) * (1 - float(findDiscount[0]['percentage']) / 100)
 
-  
+        else:            session['cost'] =  calculate_rate(session['duration_minutes'] , session['started'], float(pl['tariff']), float(pl['daytariff']))
         # Save sessions
         change_data('parking_sessions',session,'id')
         
         return SessionResponse(
             message="Session stopped successfully",
             licenseplate=session_data.licenseplate,
-            stopped=session["stopped"]
+            started=session["started"],
+            stopped=session["stopped"],
+            cost=session["cost"]
         )
 
     # -------------------------
