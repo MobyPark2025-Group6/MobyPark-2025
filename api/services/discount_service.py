@@ -11,7 +11,7 @@ class DiscountService:
     #Will return a string of 10 random letters of various capitalisations 
     @staticmethod
     def generate_discount_automatic(token, discount):
-        #10 tries before relaying an error to the user, to prevent the chance of duplicates causing a rejection of an auto generated discount code 
+        #10 tries before relaying an error to the user, to decrease the chance of duplicates causing a rejection of an auto generated discount code 
         amount = discount.amount 
         loid = discount.lot_id
         perc = discount.percentage
@@ -126,7 +126,6 @@ class DiscountService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Item not found."
                 )
-       
             
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -137,10 +136,8 @@ class DiscountService:
     def delete_discount(token, id):
         session_user = ValidationService.validate_session_token(token)
         if ValidationService.check_valid_admin(session_user):
-
             delete_data(id,'id','discounts')
             return {"Succes"}
-        
         else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

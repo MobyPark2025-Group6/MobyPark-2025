@@ -113,8 +113,6 @@ def save_record(table: str, data: dict, update_on_duplicate: bool = False) -> in
         conn.close()
     
 #Grabs the data from table for a given name
-#Handles the following : 
-#   vehicles, users, parking_lots, payments (TODO), reservations, sessions (TODO), 
 def load_data_db_table(tablename):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True) 
@@ -188,8 +186,7 @@ def change_data(table,values,condition):
 
     set_sql = f"""UPDATE {table}\n SET """
     count = 0
-    print(columns)
-    print(update_values)
+
     for c in columns:
         if not c == condition:
             if count + 1 != len(columns) - 1:
@@ -201,8 +198,6 @@ def change_data(table,values,condition):
                 set_sql += set_string
                 count+=1 
     set_sql+=f"\n WHERE {condition} = {cond_val}"
-    print(set_sql)
-    print(update_values)
 
     cursor.execute(set_sql, update_values)
     conn.commit()
@@ -210,8 +205,6 @@ def change_data(table,values,condition):
     conn.close()
     
 def create_data(table, values):
-    # Backwards-compatible wrapper
-    print(values)
     return save_record(table, values)
 
 def delete_data(item, Row, table):

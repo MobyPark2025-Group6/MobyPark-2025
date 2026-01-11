@@ -105,14 +105,10 @@ class VehicleService:
 
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
-        vehicles = load_data_db_table("vehicles")
-        index = None
-        for i, v in enumerate(vehicles):
-            if v["id"] == vid and v["user_id"] == session_user["id"]:
-                index = i
-                break
+        vehicle = get_item_db("id",vid,"vehicles")
+        
 
-        if index is None:
+        if vehicle is None or vehicle['user_id'] != session_user['id']:
             raise ValueError(f"Vehicle with id {vid} not found for user {session_user['username']}")
 
         if not isinstance(NewData, dict):
@@ -126,24 +122,25 @@ class VehicleService:
                     NewData = asdict(NewData)    
 
         save_vehicle.change_vehicle(NewData)
-        return {"status": "Success", "vehicle": vehicles[index]}
+        return {"status": "Success", "vehicle": NewData}
 
        
     
     #Delete
     @staticmethod
     def delete_vehicle(token : str , vid : str) :
-        vehicles = load_data_db_table("vehicles")
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
-        cur_vehicle = [v for v in vehicles if v['id'] == vid][0]
+        cur_vehicle = get_item_db('id',vid,'vehicles')[0]
+        user = get_item_db('id',session_user['username'],'users')
 
-        delete_data(id,"vehicles")
+        if cur_vehicle and cur_vehicle['user_id'] == user['id']:
+            delete_data(id,"vehicles")
 
-        updated_vehicles = load_data_db_table("vehicles")
-        if all(v.get("id") != cur_vehicle['id'] for v in updated_vehicles) :
-             return {"Status" : "Deleted"}
-        return {"Status" : "Not Deleted"}
+            updated_vehicles = load_data_db_table("vehicles")
+            if all(v.get("id") != cur_vehicle['id'] for v in updated_vehicles) :
+                return {"Status" : "Deleted"}
+        raise ValueError(f"Vehicle with id {vid} not found for user {session_user['username']}")
     
     # Method for retrieving vehicles, if the user_name parameter is not None the user needs to be an admin
     @staticmethod
