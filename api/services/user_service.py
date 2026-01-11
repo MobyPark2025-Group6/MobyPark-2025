@@ -3,7 +3,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
-from storage_utils import create_data, save_user_data, load_data_db_table,delete_data, get_item_db
+from storage_utils import create_data, load_data_db_table,delete_data, get_item_db, create_data
 from session_manager import add_session,get_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
 from argon2 import PasswordHasher
@@ -193,7 +193,7 @@ class UserService:
         for i, user in enumerate(users):
             if user.get("username") == username:
                 users.pop(i)
-                save_user_data(users)
+                delete_data(user['id'], 'id', 'users')
                 return MessageResponse(message="User deleted successfully")
         
         raise HTTPException(

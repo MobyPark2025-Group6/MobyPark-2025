@@ -30,176 +30,196 @@ print(f"Database '{DB_NAME}' ready.")
 conn.database = DB_NAME
 
 # 4. Create tables
+def create_tables(cursor, conn):
 # 4. Create tables (in dependency order)
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username  VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    name VARCHAR(150),
-    email VARCHAR(255) ,
-    phone VARCHAR(30),
-    role VARCHAR(50) DEFAULT 'USER',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    birth_year INT,
-    active TINYINT(1) DEFAULT 1
-)
-""")
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username  VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(150),
+        email VARCHAR(255) ,
+        phone VARCHAR(30),
+        role VARCHAR(50) DEFAULT 'USER',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        birth_year INT,
+        active TINYINT(1) DEFAULT 1
+    )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS parking_lots (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    location VARCHAR(255) NOT NULL,
-    address VARCHAR(255),
-    capacity INT NOT NULL DEFAULT 0,
-    reserved INT NOT NULL DEFAULT 0,
-    tariff DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    daytariff DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    lat DECIMAL(9,6),
-    lng DECIMAL(9,6)
-)
-""")
-
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS vehicles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    license_plate VARCHAR(20) NOT NULL ,
-    make VARCHAR(100),
-    model VARCHAR(100),
-    color VARCHAR(50),
-    year VARCHAR(50),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-               
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS reservations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    parking_lot_id INT,
-    vehicle_id INT,
-    status VARCHAR(50),
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    cost DECIMAL(10, 2),
-               
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
-)
-""")
-#[{"id":"1","user_id":"281","parking_lot_id":"217","vehicle_id":"471","start_time":"2025-12-03T11:00:00Z","end_time":"2025-12-03T14:00:00Z","status":"confirmed","created_at":"2025-12-01T11:00:00Z","cost":7.5}
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS parking_lots (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        address VARCHAR(255),
+        capacity INT NOT NULL DEFAULT 0,
+        reserved INT NOT NULL DEFAULT 0,
+        tariff DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        daytariff DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        lat DECIMAL(9,6),
+        lng DECIMAL(9,6)
+    )
+    """)
 
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS vehicles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        license_plate VARCHAR(20) NOT NULL ,
+        make VARCHAR(100),
+        model VARCHAR(100),
+        color VARCHAR(50),
+        year VARCHAR(50),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    transaction VARCHAR(255) NOT NULL UNIQUE,
-    amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-    initiator VARCHAR(255) NOT NULL,
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reservations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        parking_lot_id INT,
+        vehicle_id INT,
+        status VARCHAR(50),
+        start_time DATETIME NOT NULL,
+        end_time DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        cost DECIMAL(10, 2),
+                
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        transaction VARCHAR(255) NOT NULL UNIQUE,
+        amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        initiator VARCHAR(255) NOT NULL,
 
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ,
-    completed DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    method VARCHAR(255),
-    issuer VARCHAR(255),
-    bank VARCHAR(255),
-    hash VARCHAR(255) NOT NULL ,
-    session_id INT NOT NULL,
-    parking_lot_id INT NOT NULL,
-               
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+        completed DATETIME DEFAULT NULL,
+        date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        method VARCHAR(255),
+        issuer VARCHAR(255),
+        bank VARCHAR(255),
+        hash VARCHAR(255) NOT NULL ,
+        session_id INT NOT NULL,
+        parking_lot_id INT NOT NULL,
+                
 
-    FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
-)
-""")
-cursor.execute("""
-                CREATE TABLE IF NOT EXISTS parking_sessions (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    parking_lot_id INT NOT NULL,
-                    licenseplate VARCHAR(255) NOT NULL,
-                    started DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    stopped DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    user VARCHAR(30),
-                    duration_minutes INT,
-                    cost DECIMAL(12,2),
-                    payment_status VARCHAR(50),
-                            
-                    
-                    FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
-                )
-                """)
+        FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
+    )
+    """)
+    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS parking_sessions (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        parking_lot_id INT NOT NULL,
+                        licenseplate VARCHAR(255) NOT NULL,
+                        started DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        stopped DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        user VARCHAR(30),
+                        duration_minutes INT,
+                        cost DECIMAL(12,2),
+                        payment_status VARCHAR(50),
+                                
+                        
+                        FOREIGN KEY (parking_lot_id) REFERENCES parking_lots(id) ON DELETE CASCADE
+                    )
+                    """)
 
-conn.commit()
+    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS discounts (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        
+                        amount INT DEFAULT NULL,
+                        created_at DATETIME DEFAULT NULL,
+                        lot_id INT DEFAULT NULL,
+                        code VARCHAR(30) DEFAULT NULL,
+                        percentage DECIMAL(4,2) DEFAULT NULL,
+                        user_id INT DEFAULT NULL,
+                        expiration_date DATETIME DEFAULT NULL
+                    )
+                    """)
+
+    cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS refunds (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        transaction VARCHAR(255) NOT NULL UNIQUE,
+                        amount DECIMAL(9,6) DEFAULT NULL,
+                        coupled_to VARCHAR(255) DEFAULT NULL,
+                        processed_by VARCHAR(255) DEFAULT NULL,
+                        created_at DATETIME DEFAULT NULL,
+                        completed BOOLEAN,
+                        hash VARCHAR(255) DEFAULT NULL
+                    )
+                    """)
+    conn.commit()
 
 def seed_db(cursor):
-    # pl_data = load_data.load_parkinglots()
-    # rs_data = load_data.load_reservations()
-    # vs_data = load_data.load_vehicles()
-    # us_data = load_data.load_users()
+    pl_data = load_data.load_parkinglots()
+    rs_data = load_data.load_reservations()
+    vs_data = load_data.load_vehicles()
+    us_data = load_data.load_users()
 
-  # Seed users
-    # for us in us_data:
-    #     cursor.execute(
-    #         """
-    #         INSERT INTO users
-    #         (username, password, name, email, phone, role, created_at, birth_year, active)
-    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    #         """,
-    #         (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
-    #         us["created_at"], us["birth_year"], us["active"])
-    #     )
-    # print("Seeded users (duplicates ignored)")
-    # conn.commit() 
+#   Seed users
+    for us in us_data:
+        cursor.execute(
+            """
+            INSERT INTO users
+            (username, password, name, email, phone, role, created_at, birth_year, active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (us["username"], us["password"], us["name"], us["email"], us["phone"], us["role"],
+            us["created_at"], us["birth_year"], us["active"])
+        )
+    print("Seeded users (duplicates ignored)")
+    conn.commit() 
     
     # Seed parkinglots
-    # for pl in pl_data:
-    #     cursor.execute(
-    #             "INSERT INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
-    #             (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
-    #         )
-    # print("Seeded parking_lots:", pl["name"])
-    # conn.commit() 
+    for pl in pl_data:
+        cursor.execute(
+                "INSERT INTO parking_lots (name, location, address, capacity, reserved, tariff, daytariff, created_at, lat, lng) VALUES (%s, %s, %s, %s, %s,%s, %s,%s, %s,%s)",
+                (pl["name"], pl["location"], pl["address"], pl["capacity"], pl["reserved"], pl["tariff"],pl["daytariff"],pl["created_at"],pl["lat"],pl["lng"])
+            )
+    print("Seeded parking_lots:", pl["name"])
+    conn.commit() 
     
-    # # Seed reservations
-    # for rs in rs_data:
-    #     cursor.execute(
-    #             "INSERT INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-    #             (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
-    #         )
-    # print("Seeded reservations")
-    # conn.commit() 
+    # Seed reservations
+    for rs in rs_data:
+        cursor.execute(
+                "INSERT INTO reservations (user_id, parking_lot_id, vehicle_id, start_time, end_time, status, created_at, cost) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (rs["user_id"], rs["parking_lot_id"], rs["vehicle_id"], rs["start_time"], rs["end_time"], rs['status'], rs["created_at"], rs["cost"])
+            )
+    print("Seeded reservations")
+    conn.commit() 
     
     # Seed vehicles
-    # for vs in vs_data:
-    #     cursor.execute(
-    #             "INSERT INTO vehicles (user_id, license_plate, make, model, color, year, created_at) VALUES (%s, %s, %s, %s, %s, %s,  %s)",
-    #             (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["year"], vs["created_at"]) 
-    #         )
-    # print("Seeded vehicles")
-    # conn.commit() 
+    for vs in vs_data:
+        cursor.execute(
+                "INSERT INTO vehicles (user_id, license_plate, make, model, color, year, created_at) VALUES (%s, %s, %s, %s, %s, %s,  %s)",
+                (vs["user_id"], vs["license_plate"], vs["make"], vs["model"], vs["color"], vs["year"], vs["created_at"]) 
+            )
+    print("Seeded vehicles")
+    conn.commit() 
 
     # Seed parking sessions
-    # seed_parking_sessions_batch
-    # print("Seeded parking sessions")
+    seed_parking_sessions_batch
+    print("Seeded parking sessions")
 
-     # Seed Payments
+    #  Seed Payments
     seed_payments_batch()
     print("Seeded payments")
-    
-# seed_db(cursor)
-
 
 def seed_parking_sessions_batch():
-    sesh = load_data.load_parking_sessions()  # 6M rows
+    sesh = load_data.load_parking_sessions()  
   
-    BATCH_SIZE = 5000  # smaller chunks to avoid max_allowed_packet
+    BATCH_SIZE = 5000  
     c = 0
     sql = """
     INSERT INTO parking_sessions
@@ -306,5 +326,5 @@ def seed_payments_batch():
 
     conn.close()
 
-seed_db(cursor)
-
+create_tables(cursor,conn)
+# seed_db(cursor)

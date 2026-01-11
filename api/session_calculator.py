@@ -1,5 +1,5 @@
 from datetime import datetime
-from storage_utils import load_payment_data
+from storage_utils import get_item_db
 from hashlib import md5
 import math
 import uuid
@@ -34,6 +34,7 @@ def calculate_price(parkinglot, sid, data, is_hotel_guest=False):
 
 
 def generate_payment_hash(sid, data):
+
     return md5(str(sid + data["licenseplate"]).encode("utf-8")).hexdigest()
 
 
@@ -41,7 +42,7 @@ def generate_transaction_validation_hash():
     return str(uuid.uuid4())
 
 def check_payment_amount(hash):
-    payments = load_payment_data()
+    payments = get_item_db('transaction',hash,'payments')
     total = 0
 
     for payment in payments:

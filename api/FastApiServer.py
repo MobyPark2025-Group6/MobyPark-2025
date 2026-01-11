@@ -7,12 +7,13 @@ from models.user_models import UserRegister, UserLogin, LoginResponse, MessageRe
 from models.parking_models import ParkingLotBase, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
 from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
 from models.reservation_models import ReservationRegister, ReservationOut
+from models.discount_model import DiscountBase,DiscountCreate
 from services.user_service import UserService
 from services.parking_service import ParkingService
 from services.reservation_service import ReservationService
 from services.vehicle_service import VehicleService
 from services.payment_service import PaymentService
-
+from services.discount_service import DiscountService
 
 # Define tags for API organization
 tags_metadata = [
@@ -40,6 +41,11 @@ tags_metadata = [
         "name": "Reservations",
         "description": "Parking space reservation and booking operations",
     },
+    {
+        "name": "Discounts",
+        "description": "Creation editing and removal of discounts",
+    }
+
 ]
 
 app = FastAPI(
@@ -254,7 +260,7 @@ async def get_user_payments(username: str, token: Optional[str] = Depends(get_to
         raise HTTPException(status_code=403, detail="Access denied")
 
 
-@app.post("/payments", response_model=dict, status_code=201, tags=["Payments"])
+@app.post("/payments/create", response_model=dict, status_code=201, tags=["Payments"])
 async def create_payment(payment: PaymentCreate, token: Optional[str] = Depends(get_token)):
     """Create a new payment"""
     session = PaymentService.get_session(token)
@@ -283,7 +289,7 @@ async def update_payment(transaction_id: str, update: PaymentUpdate, token: Opti
     if not session:
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     try:
-        updated_payment = PaymentService.update_payment(transaction_id, update)
+        updated_payment = PaymentService.update_payment(transaction_id, update, session)
         return {"status": "Success", "payment": updated_payment}
     except ValueError:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -504,7 +510,61 @@ async def get_reservations(
     ):
     """Get reservation details by reservation ID """
 
+@app.post("/discounts/create", response_model=DiscountCreate, tags=["Discounts"])
+async def create_discount(
+    discount : DiscountCreate,
+    token: Optional[str] = Depends(get_token)):
 
+    """
+
+    Admin only 
+
+    Generates a discount and places it in the db. 
+
+    If the code part of the discount is empty, the system will generate one on its own 
+    
+    """
+    if discount.code :
+            disc = DiscountService.generate_discount_manual(token, discount)
+            return disc
+    disc = DiscountService.generate_discount_automatic(token, discount)
+    return disc
+
+
+@app.put("/discounts/edit/{id}", response_model=DiscountBase, tags=["Discounts"])
+async def edit_discount(
+    id : int, 
+    discount : DiscountBase,
+    token: Optional[str] = Depends(get_token)):
+
+    """
+
+    Admin only 
+
+    Edit a discount based on it's id 
+
+    Leave the values empty that are not to be changed 
+    
+    """
+    disc = DiscountService.edit_discount(token, id, discount)
+    return disc
+    
+@app.delete("/discounts/remove/{id}", response_model=dict, tags=["Discounts"])
+async def remove_discount(
+    id : int, 
+    token: Optional[str] = Depends(get_token)):
+
+    """
+
+    Admin only 
+
+    Delete a discount based on its ID 
+    
+    """
+    DiscountService.delete_discount(token, id)
+    return {"status": "Success", "Discount": id}
+   
+    
 
 @app.delete("/reservations/{res_id}", tags=["Reservations"])
 async def delete_reservation(

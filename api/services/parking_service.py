@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from storage_utils import  create_data, save_parking_lot_data, load_data_db_table, load_json, delete_data, get_item_db, create_data, change_data
+from storage_utils import  create_data, load_data_db_table, delete_data, get_item_db, create_data, change_data
 from session_manager import get_session, add_session
 from models.parking_models import (
     ParkingLotBase, SessionStart, SessionStop, 
@@ -278,7 +278,7 @@ class ParkingService:
         #     if key in updates:
         #         parking_lots[lot_id][key] = updates[key]
 
-        save_parking_lot_data(parking_lots)
+        create_data(parking_lots)
         return {"message": "Parking lot updated successfully", "parking_lot_id": lot_id}
 
 
