@@ -141,7 +141,7 @@ def create_tables(cursor, conn):
                         created_at DATETIME DEFAULT NULL,
                         lot_id INT DEFAULT NULL,
                         code VARCHAR(30) DEFAULT NULL,
-                        percentage DECIMAL(4,2) DEFAULT NULL,
+                        percentage DECIMAL(5,2) DEFAULT NULL,
                         user_id INT DEFAULT NULL,
                         expiration_date DATETIME DEFAULT NULL
                     )
