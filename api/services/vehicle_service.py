@@ -5,7 +5,7 @@ from models.user_models import User
 from typing import Optional
 
 from services.validation_service import ValidationService
-from storage_utils import load_data_db_table,get_item_db, save_vehicle, delete_data
+from storage_utils import load_data_db_table,get_item_db, save_vehicle
 from services.user_service import UserService
 from loaddb import load_data
 

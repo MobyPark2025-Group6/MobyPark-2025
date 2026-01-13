@@ -2,9 +2,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
-from storage_utils import load_data_db_table, get_item_db, save_reservation
-from storage_utils import create_data, delete_data, load_data_db_table, get_item_db, change_data
-from storage_utils import create_data, delete_data, load_data_db_table, get_item_db
+from storage_utils import load_data_db_table, get_item_db, save_reservation, save_parking_lot
 from models.reservation_models import ReservationRegister, ReservationResponse, ReservationOut
 
 class ReservationService:
@@ -57,8 +55,8 @@ class ReservationService:
 
         # Update parkinglots to show reservation
         lot["reserved"] += 1
-        parking_lots[reservation_data.lot_id] = lot
-        change_data("parking_lots", reservation_data.lot_id, 'id')
+        save_parking_lot.change_plt(lot)
+
 
         # Save the new reservation
         save_reservation.create_reservation(new_reservation)
@@ -173,12 +171,11 @@ class ReservationService:
         lot = parking_lots.get(reservation["lot_id"])
         if lot and lot["reserved"] > 0:
             lot["reserved"] -= 1
-            parking_lots[reservation["lot_id"]] = lot
-            change_data("parking_lots", parking_lots, )
+            save_parking_lot.change_plt(lot)
+    
 
         # Remove the reservation
-        reservations.pop(reservation_index)
-        change_data("reservations", reservations, )
-        delete_data(res_id, "reservation_id", "reservations")
+        save_reservation.delete_reservation(res_id)
+
 
         return {"status": "Success", "message": "Reservation deleted"}
