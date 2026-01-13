@@ -509,6 +509,38 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Payment not found!")
                 return
 
+        elif self.path.startswith("/parking-lots/") and 'sessions/' in self.path:
+            # Update a specific session (optional)
+            token = self.headers.get('Authorization')
+            if not token or not get_session(token):
+                self.send_response(401)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Unauthorized: Invalid or missing session token")
+                return
+            session_user = get_session(token)
+            if session_user.get("role") != "ADMIN":
+                self.send_response(403)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Access denied")
+                return
+            lid, _, sid = self.path.split("/")[2:5]
+            sessions = load_json(f"data/pdata/p{lid}-sessions.json")
+            if sid not in sessions:
+                self.send_response(404)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Session not found")
+                return
+            data = json.loads(self.rfile.read(int(self.headers.get("Content-Length", -1))))
+            sessions[sid].update(data)
+            save_data(f"data/pdata/p{lid}-sessions.json", sessions)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "Updated", "session": sessions[sid]}, default=str).encode("utf-8"))
+            return
 
     def do_DELETE(self):
         if self.path.startswith("/parking-lots/"):
@@ -626,6 +658,39 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"status": "Deleted"}).encode("utf-8"))
                 return
 
+
+        elif self.path.startswith("/payments/"):
+            # Delete a payment (Admin)
+            pid = self.path.replace("/payments/", "")
+            token = self.headers.get('Authorization')
+            if not token or not get_session(token):
+                self.send_response(401)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Unauthorized: Invalid or missing session token")
+                return
+            session_user = get_session(token)
+            if session_user.get("role") != "ADMIN":
+                self.send_response(403)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Access denied")
+                return
+            payments = load_payment_data()
+            payment = next((p for p in payments if p["transaction"] == pid), None)
+            if not payment:
+                self.send_response(404)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Payment not found")
+                return
+            payments.remove(payment)
+            save_payment_data(payments)
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "Deleted"}).encode("utf-8"))
+            return
 
     def do_GET(self):
         if self.path == "/profile":
@@ -887,21 +952,30 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps([]).encode("utf-8"))
                 return
+            # --- UPDATE vehicle history/reservations placeholders ---
             elif self.path.endswith("/history"):
-                
+                # Return actual sessions of this vehicle
                 vehicles = load_json("data/vehicles.json")
                 uvehicles = vehicles.get(session_user["username"], {})
+                vid = self.path.split("/")[2]
                 if vid not in uvehicles:
                     self.send_response(404)
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
                     self.wfile.write(b"Not found!")
                     return
+                history = []
+                for pid, parkinglot in load_parking_lot_data().items():
+                    sessions = load_json(f'data/pdata/p{pid}-sessions.json')
+                    for sid, s in sessions.items():
+                        if s.get("licenseplate").replace("-", "") == vid:
+                            history.append({**s, "parkinglot": pid})
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps([]).encode("utf-8"))
+                self.wfile.write(json.dumps(history, default=str).encode("utf-8"))
                 return
+
             else:
                 vehicles = load_json("data/vehicles.json")
                 users = load_json('data/users.json')
@@ -919,7 +993,97 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps(vehicles.get(user, {}), default=str).encode("utf-8"))
                 return
-            
+
+
+        elif self.path == "/users":
+            # Admin: list all users
+            token = self.headers.get('Authorization')
+            if not token or not get_session(token):
+                self.send_response(401)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Unauthorized: Invalid or missing session token")
+                return
+            session_user = get_session(token)
+            if session_user.get("role") != "ADMIN":
+                self.send_response(403)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Access denied")
+                return
+            users = load_json("data/users.json")
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(users, default=str).encode('utf-8'))
+            return
+
+
+        elif self.path.startswith("/users/"):
+            token = self.headers.get('Authorization')
+            if not token or not get_session(token):
+                self.send_response(401)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Unauthorized: Invalid or missing session token")
+                return
+            session_user = get_session(token)
+            if session_user.get("role") != "ADMIN":
+                self.send_response(403)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Access denied")
+                return
+            username = self.path.replace("/users/", "")
+            users = load_json("data/users.json")
+            user = next((u for u in users if u["username"] == username), None)
+            if not user:
+                self.send_response(404)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"User not found")
+                return
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(user, default=str).encode('utf-8'))
+            return
+
+
+        elif self.path.startswith("/reservations/") and not self.path.split("/")[-1].isnumeric():
+            # List all reservations for a user (admin only)
+            token = self.headers.get('Authorization')
+            if not token or not get_session(token):
+                self.send_response(401)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Unauthorized: Invalid or missing session token")
+                return
+            session_user = get_session(token)
+            if session_user.get("role") != "ADMIN":
+                self.send_response(403)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"Access denied")
+                return
+            user = self.path.replace("/reservations/", "")
+            reservations = load_reservation_data()
+            user_res = {rid: res for rid, res in reservations.items() if res.get("user") == user}
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(user_res, default=str).encode("utf-8"))
+            return
+
+
+        elif self.path == "/":
+            # Root endpoint
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"message": "Parking API running"}).encode("utf-8"))
+            return
+
 
 server = HTTPServer(('localhost', 8000), RequestHandler)
 print("Server running on http://localhost:8000")
