@@ -75,17 +75,14 @@ jobs:
     runs-on: ubuntu-latest
     # Only deploy on push to main (not on PRs or Develop branch)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
     steps:
-      - name: Test SSH connectivity
-        run: nc -vz 145.24.237.188 22
       - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          timeout: 500s
+          timeout: 60s
           script: |
             # Navigate to project directory
             cd ~/Database_MobyPark
