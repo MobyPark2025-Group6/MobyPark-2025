@@ -78,7 +78,7 @@ jobs:
     
     steps:
       - name: Test SSH connectivity
-        run: nc -vz your.server.ip 22
+        run: nc -vz 145.24.237.188 22
       - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
