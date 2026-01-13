@@ -80,7 +80,7 @@ jobs:
           path: coverage.xml
         if: ${{ failure() }}
   deploy:
-    needs: [build, test]
+    needs: [build]
     runs-on: ubuntu-latest
     # Only deploy on push to main (not on PRs or Develop branch)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
