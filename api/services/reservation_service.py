@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
-from storage_utils import create_data, delete_data, load_data_db_table, get_item_db
+from storage_utils import create_data, delete_data, load_data_db_table, get_item_db, save_reservation
 from models.reservation_models import ReservationRegister, ReservationResponse, ReservationOut
 
 class ReservationService:
@@ -40,7 +40,8 @@ class ReservationService:
         # Update parkinglots to show reservation
 
         # Save the new reservation
-        create_data("reservations", new_reservation)
+        save_reservation.create_reservation(new_reservation)
+
 
         return {"status": "Success" ,"reservation": new_reservation}
 
@@ -126,5 +127,11 @@ class ReservationService:
         """Delete a reservation by its ID"""
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
-
-        delete_data(res_id, "reservations")
+        reservation = get_item_db('id',res_id,'reservations')
+    
+        if reservation != None and reservation["user_id"] != session_user["id"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+        save_reservation.delete_reservation(res_id)

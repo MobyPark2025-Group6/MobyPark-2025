@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
-from storage_utils import  create_data, load_data_db_table, delete_data, get_item_db, create_data, change_data
+from storage_utils import load_data_db_table, get_item_db, save_parking_sessions, save_parking_lot
 from session_manager import get_session, add_session
 from models.parking_models import (
     ParkingLotBase, SessionStart, SessionStop, 
@@ -77,18 +77,10 @@ class ParkingService:
         """Start a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
-        
-        # Load existing sessions for this parking lot
-        # sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
+
         
         # Check if there's already an active session for this license plate
         filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] == None]
-   
-        # filtered_sessions = {
-        #     key: value for key, value in sessions.items() 
-        #     if (value.get("licenseplate") == session_data.licenseplate and 
-        #         not value.get('stopped'))
-        # }
         
         if len(filtered_sessions) > 0:
             raise HTTPException(
@@ -108,13 +100,9 @@ class ParkingService:
 
         }
         
-        # Add session with new ID
-        # session_id = str(len(sessions) + 1)
-        # sessions[session_id] = new_session
         
-        create_data("parking_sessions",new_session)
-        # Save sessions
-        # save_data(f'data/pdata/p{lot_id}-sessions.json', sessions)
+        save_parking_sessions.create_parking_sessions(new_session)
+
         
         return SessionResponse(
             message="Session started successfully",
@@ -127,14 +115,9 @@ class ParkingService:
         """Stop a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
+
         get_sessions_for_plate = get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions')
         session = [s for s in get_sessions_for_plate if s['stopped'] == 'None' and s['user'] == session_user['username']]
-
-        # Load existing sessions for this parking lot
-        # sessions = load_json(f'data/pdata/p{lot_id}-sessions.json')
-        
-        # Find active session for this license plate
-        # filtered_sessions = [p for p in get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions') if p['stopped'] == None and p['']]
         pl = get_item_db('id',lot_id,'parking_lots')[0]
     
         
@@ -160,7 +143,8 @@ class ParkingService:
 
   
         # Save sessions
-        change_data('parking_sessions',session,'id')
+        save_parking_sessions.change_parking_sessions(session)
+     
         
         return SessionResponse(
             message="Session stopped successfully",
@@ -214,7 +198,8 @@ class ParkingService:
 
         }
         # Save parking lots
-        create_data('parking_lots',new_lot)
+
+        save_parking_lot.create_plt(new_lot)
         return ParkingLotResponse(
             message="Parking lot created successfully",
             parking_lot_name=new_lot["name"]
@@ -272,13 +257,7 @@ class ParkingService:
         parking_lots = get_item_db('id',lot_id,'parking_lots')
         if parking_lots:
             raise HTTPException(status_code=404, detail="Parking lot not found")
-        change_data('parking_lots',updates,'id')
-        # allowed_fields = ["name", "location", "capacity", "hourly_rate"]
-        # for key in allowed_fields:
-        #     if key in updates:
-        #         parking_lots[lot_id][key] = updates[key]
-
-        create_data(parking_lots)
+        save_parking_lot.change_plt(updates)
         return {"message": "Parking lot updated successfully", "parking_lot_id": lot_id}
 
 
@@ -296,7 +275,7 @@ class ParkingService:
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Alleen toegestane velden updaten
-        change_data('parking_sessions',session[0],'id')
+        save_parking_lot.change_plt(session[0])
 
         return session
 
@@ -307,11 +286,8 @@ class ParkingService:
             raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing session token")
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
-        # TODO Removable?
-        # parking_lots = load_data_db_table("parking_lots")
-        # if lot_id not in parking_lots:
-        #     raise HTTPException(status_code=404, detail="Parking lot not found")
-        delete_data(lot_id,'id',"parking_lots")
+     
+        save_parking_lot.delete_plt(lot_id)
   
         return {"detail": "Parking lot deleted"}
 
@@ -323,5 +299,5 @@ class ParkingService:
         if session_user.get("role") != "ADMIN":
             raise HTTPException(status_code=403, detail="Access denied")
 
-        delete_data(session_id,'id',"parking_sessions")
+        save_parking_sessions.delete_parking_sessions(session_id)
         return {"detail": "Session deleted"}
