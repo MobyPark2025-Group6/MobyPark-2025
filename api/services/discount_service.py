@@ -50,9 +50,7 @@ class DiscountService:
     @staticmethod
     def generate_discount_manual(token, discount):
         
-        
-        amount = discount.amount 
-       
+        amount = discount.amount
         loid = discount.lot_id
         disc_str = discount.code
         perc = discount.percentage
@@ -117,7 +115,6 @@ class DiscountService:
                 disc['user_id'] = disc['user_id'] if uid == 0 else uid
 
                 save_discount.change_discount(disc)
-
                 
                 return disc 
             else:

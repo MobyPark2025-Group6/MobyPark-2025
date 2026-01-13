@@ -5,7 +5,7 @@ import uvicorn
 from models.vehicle_models import *
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse, User
 from models.parking_models import ParkingLotBase, SessionStart, SessionStop, SessionResponse, ParkingLotResponse
-from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut
+from models.payment_models import PaymentCreate, PaymentRefund, PaymentUpdate, PaymentOut, PaymentBase
 from models.reservation_models import ReservationRegister, ReservationOut
 from models.discount_model import DiscountBase,DiscountCreate
 from services.user_service import UserService
@@ -239,7 +239,7 @@ async def delete_parking_session(
     """Delete a specific parking session (Admin only)."""
     return ParkingService.delete_parking_session(lot_id, session_id, authorization)
 
-@app.get("/payments", response_model=List[PaymentOut], tags=["Payments"])
+@app.get("/payments", response_model=List[PaymentBase], tags=["Payments"])
 async def get_payments(token: Optional[str] = Depends(get_token)):
     """Get all payments for the authenticated user"""
     session = PaymentService.get_session(token)

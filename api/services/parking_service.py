@@ -100,9 +100,7 @@ class ParkingService:
 
         }
         
-        
         save_parking_sessions.create_parking_sessions(new_session)
-
         
         return SessionResponse(
             message="Session started successfully",
@@ -119,7 +117,6 @@ class ParkingService:
         get_sessions_for_plate = get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions')
         session = [s for s in get_sessions_for_plate if s['stopped'] == 'None' and s['user'] == session_user['username']]
         pl = get_item_db('id',lot_id,'parking_lots')[0]
-    
         
         if len(session) == 0:
             raise HTTPException(

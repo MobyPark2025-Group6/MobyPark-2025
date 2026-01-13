@@ -123,13 +123,12 @@ def delete_data(item, Row, table):
                 DELETE FROM {table} 
                 WHERE {Row} = {item};
                 """
-        
-
         cursor.execute(sql)
         conn.commit()
         cursor.close()
         conn.close()
 
+# Pre made implementation of using the create / change / delete for all classes to prevent clutter in other files 
 class save_vehicle:
 
     def create_vehicle(vehicle_data):
@@ -202,4 +201,15 @@ class save_parking_sessions:
         
     def delete_parking_sessions(id):
         delete_data("parking_sessions",id)
+
+class save_refunds:
+
+    def create_refund(refund_data):
+        create_data("refunds", refund_data)
+  
+    def change_refund(refund_data):
+        change_data("refunds", refund_data, "id")
         
+    def delete_refund(id):
+        delete_data("refunds",id)
+               

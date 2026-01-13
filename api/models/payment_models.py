@@ -21,9 +21,6 @@ class PaymentCreate(BaseModel):
     """Used for creating new payments"""
     parking_lot_id : int 
     license_plate : str 
-    method : str
-    bank : str
-    transaction : str 
     session_id : str 
 
 class PaymentRefund(PaymentBase):
