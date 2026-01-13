@@ -3,6 +3,8 @@ from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
 from storage_utils import load_data_db_table, get_item_db, save_reservation
+from storage_utils import create_data, delete_data, load_data_db_table, get_item_db, change_data
+from storage_utils import create_data, delete_data, load_data_db_table, get_item_db
 from models.reservation_models import ReservationRegister, ReservationResponse, ReservationOut
 
 class ReservationService:
@@ -23,6 +25,22 @@ class ReservationService:
             else:
                 reservation_data.user_id = session_user["id"]
 
+        parking_lots = load_data_db_table("parking_lots")
+
+        # Check if parking lot has available spots
+        lot = parking_lots.get(reservation_data.lot_id)
+        if lot:
+            if lot["reserved"] >= lot["capacity"]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No available spots in the selected parking lot"
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Parking lot not found"
+            )
+
         # Load existing reservations
         reservations = load_data_db_table("reservations")
 
@@ -36,6 +54,11 @@ class ReservationService:
             "end_time": reservation_data.end_time,
             "created_at": int(datetime.now().timestamp())
         }
+
+        # Update parkinglots to show reservation
+        lot["reserved"] += 1
+        parking_lots[reservation_data.lot_id] = lot
+        change_data("parking_lots", parking_lots, )
 
         # Save the new reservation
         save_reservation.create_reservation(new_reservation)
@@ -122,14 +145,40 @@ class ReservationService:
     
     @staticmethod
     def delete_reservation(res_id: str, token: str) -> Dict[str, Any]:
-        """Delete a reservation by its ID"""
+        """Delete a specific reservation by its ID"""
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
-        reservation = get_item_db('id',res_id,'reservations')
-    
-        if reservation != None and reservation["user_id"] != session_user["id"]:
+
+        reservations = load_data_db_table("reservations")
+        reservation_index = next((i for i, res in enumerate(reservations) if res["id"] == res_id), None)
+
+        if reservation_index is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reservation not found"
+            )
+        
+        reservation = reservations[reservation_index]
+
+        # Ensure the user is deleting a reservation for themselves or is an admin
+        if not ValidationService.check_valid_admin(session_user):
+            if reservation["user_id"] != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied"
                 )
-        save_reservation.delete_reservation(res_id)
+
+        # Update parking lot to free up the reserved spot
+        parking_lots = load_data_db_table("parking_lots")
+        lot = parking_lots.get(reservation["lot_id"])
+        if lot and lot["reserved"] > 0:
+            lot["reserved"] -= 1
+            parking_lots[reservation["lot_id"]] = lot
+            change_data("parking_lots", parking_lots, )
+
+        # Remove the reservation
+        reservations.pop(reservation_index)
+        change_data("reservations", reservations, )
+        delete_data(res_id, "reservation_id", "reservations")
+
+        return {"status": "Success", "message": "Reservation deleted"}

@@ -18,6 +18,12 @@ class DiscountService:
         exp_date = discount.expiration_date
         uid = discount.user_id
 
+        if perc and perc > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Percentage discount cannot exceed 100%"
+            )
+
         session_user = ValidationService.validate_session_token(token)
         if ValidationService.check_valid_admin(session_user):
             for i in range(0,10) :
@@ -56,6 +62,12 @@ class DiscountService:
         perc = discount.percentage
         exp_date = discount.expiration_date
         uid = discount.user_id
+
+        if perc and perc > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Percentage discount cannot exceed 100%"
+            )
   
         session_user = ValidationService.validate_session_token(token)
         if ValidationService.check_valid_admin(session_user):
@@ -101,6 +113,11 @@ class DiscountService:
         exp_date = discount.expiration_date
         uid = discount.user_id
         
+        if perc and perc > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Percentage discount cannot exceed 100%"
+            )
 
         session_user = ValidationService.validate_session_token(token)
         if ValidationService.check_valid_admin(session_user):

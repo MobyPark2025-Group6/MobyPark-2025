@@ -141,9 +141,11 @@ class PaymentService:
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="The discount codes alloted parking lot id is not compatible with the payment's parking lot id."
                     )
+
                 # Remove the discounted value from the current to be payed amount 
                 if disc_code["amount"] != None :
                     pmnt["amount"] -= disc_code["amount"]
+
                 elif disc_code["percentage"] != None:
                     perc = (100 - disc_code["percentage"]) / 100
                     x = pmnt["amount"]
@@ -154,6 +156,7 @@ class PaymentService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Discount code not found."
                 )
+            
         # Apply the changes to payments and parking_sessions 
         save_payment.change_payment(pmnt)
         
