@@ -20,6 +20,7 @@ class ValidationService:
                 )
             
         return session_user
+     
      @staticmethod
      def validate_admin_access(user: Dict[str, Any]):
         """Check if user has admin access"""
@@ -35,6 +36,20 @@ class ValidationService:
             return True
         return False 
      
+     @staticmethod
+     def validate_employee_acces(user: Dict[str, Any]):
+        """Check if user has employee access"""
+        if user.get('role') != 'EMPLOYEE':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: Admin privileges required"
+            )
+     @staticmethod
+     def check_valid_employee(user: Dict[str, Any]):
+        """Return true or false if the user is an Employee"""
+        if user.get('role') != 'EMPLOYEE':
+            return True
+        return False 
      
      
         

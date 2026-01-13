@@ -43,7 +43,6 @@ class PaymentService:
 
     def create_payment(payment: PaymentCreate, session_user: dict) -> Dict:
         transaction_id = generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
-      
 
         chars = string.ascii_uppercase + string.digits
         issuer_string = ''
@@ -60,6 +59,7 @@ class PaymentService:
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many attempts. Please try again later."
             )
+
         find_session_to_pay = get_item_db('id', payment.session_id, 'payments')[0]
   
         if find_session_to_pay and find_session_to_pay["completed"] == None:
@@ -82,6 +82,7 @@ class PaymentService:
             "session_id":session_user['id'],
             "parking_lot_id":find_session_to_pay['parking_lot_id']
         }
+
         save_payment.create_payment(new_payment)
 
         return new_payment
@@ -89,7 +90,7 @@ class PaymentService:
 
     def refund_payment(payment: PaymentOut, session_user: dict) -> Dict:
 
-         if ValidationService.check_valid_admin(session_user):
+         if ValidationService.check_valid_admin(session_user) or ValidationService.check_valid_employee(session_user):
             transaction_id = generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
 
             refund_entry = {
@@ -167,14 +168,14 @@ class PaymentService:
 
 
     def get_all_user_payments(admin_session: dict, username: str) -> List[Dict]:
-        if admin_session.get("role") != "ADMIN":
+        if admin_session.get("role") != "ADMIN" and admin_session.get("role") !="EMPLOYEE" :
             raise PermissionError("Access denied")
         payments = load_data_db_table("payments")
         return [p for p in payments if p.get("initiator") == username]
 
     def delete_payment(admin_session: dict, transaction_id: str) -> List[Dict]:
       
-        if admin_session.get("role") != "ADMIN":
+        if admin_session.get("role") != "ADMIN" and admin_session.get("role") !="EMPLOYEE" :
             raise PermissionError("Access denied")
         
         payments = load_data_db_table("payments")

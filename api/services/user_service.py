@@ -113,6 +113,7 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        
         save_user.change_user(c_user)
 
         return MessageResponse(message="User updated successfully")

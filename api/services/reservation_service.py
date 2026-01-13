@@ -14,7 +14,7 @@ class ReservationService:
         session_user = ValidationService.validate_session_token(token)
 
         # Ensure the user is creating a reservation for themselves or is an admin
-        if not ValidationService.check_valid_admin(session_user):
+        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_admin(session_user) or ValidationService.check_valid_employee(session_user):
             if reservation_data.user_id != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -49,7 +49,7 @@ class ReservationService:
         """Retrieve reservations for a specific user"""
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
-        if session_user["id"] != user_id and not ValidationService.check_valid_admin(session_user):
+        if session_user["id"] != user_id and not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_employee(session_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: Cannot access other user's reservations"
@@ -84,7 +84,7 @@ class ReservationService:
         reservation = reservations[0]
         
         # Ensure the user is getting a reservation for themselves or is an admin
-        if not ValidationService.check_valid_admin(session_user):
+        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_employee(session_user):
             if reservation["user_id"] != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
