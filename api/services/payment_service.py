@@ -60,7 +60,7 @@ class PaymentService:
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many attempts. Please try again later."
             )
-        find_session_to_pay =  get_item_db('id', payment.session_id, 'payments')[0]
+        find_session_to_pay = get_item_db('id', payment.session_id, 'payments')[0]
   
         if find_session_to_pay and find_session_to_pay["completed"] == None:
             raise HTTPException(
@@ -89,19 +89,24 @@ class PaymentService:
 
     def refund_payment(payment: PaymentOut, session_user: dict) -> Dict:
 
-        transaction_id = generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
+         if ValidationService.check_valid_admin(session_user):
+            transaction_id = generate_payment_hash(session_user['id'], {'licenseplate': payment.license_plate})
 
-        refund_entry = {
-            "transaction": transaction_id,
-            "amount": -abs(payment.amount),
-            "coupled_to": payment.coupled_to,
-            "processed_by": session_user["username"],
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "completed": False,
-            "hash": generate_transaction_validation_hash(),
-        }
-        save_refunds.create_refund(refund_entry)
-        return refund_entry
+            refund_entry = {
+                "transaction": transaction_id,
+                "amount": -abs(payment.amount),
+                "coupled_to": payment.coupled_to,
+                "processed_by": session_user["username"],
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "completed": False,
+                "hash": generate_transaction_validation_hash(),
+            }
+            save_refunds.create_refund(refund_entry)
+            return refund_entry
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user is not an admin.",
+        )
 
 
     def update_payment(transaction_id: str, update: PaymentUpdate, session) -> Dict:
@@ -110,7 +115,7 @@ class PaymentService:
         user = get_item_db('username', session["username"], 'users')
         ses = get_item_db('id',pmnt["session_id"],'parking_sessions')
 
-        if not pmnt:
+        if not pmnt or pmnt["completed"] is not None:
             raise ValueError("Payment not found")
 
         pmnt["completed"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -169,10 +174,12 @@ class PaymentService:
 
     def delete_payment(admin_session: dict, transaction_id: str) -> List[Dict]:
       
-        payments = load_data_db_table("payments")
-        pmnt = get_item_db('transaction_id',transaction_id,'payments')
         if admin_session.get("role") != "ADMIN":
             raise PermissionError("Access denied")
+        
+        payments = load_data_db_table("payments")
+        pmnt = get_item_db('transaction_id',transaction_id,'payments')
+
         save_payment.delete_payment(pmnt)
        
         return any(x["transaction_id"] == transaction_id for x in payments)

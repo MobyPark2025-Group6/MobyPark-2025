@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
-from storage_utils import create_data, delete_data, load_data_db_table, get_item_db, save_reservation
+from storage_utils import load_data_db_table, get_item_db, save_reservation
 from models.reservation_models import ReservationRegister, ReservationResponse, ReservationOut
 
 class ReservationService:
@@ -36,8 +36,6 @@ class ReservationService:
             "end_time": reservation_data.end_time,
             "created_at": int(datetime.now().timestamp())
         }
-
-        # Update parkinglots to show reservation
 
         # Save the new reservation
         save_reservation.create_reservation(new_reservation)

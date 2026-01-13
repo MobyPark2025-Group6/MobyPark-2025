@@ -113,7 +113,7 @@ class ParkingService:
         """Stop a parking session for a vehicle"""
         # Validate session token
         session_user = ParkingService.validate_session_token(token)
-
+        
         get_sessions_for_plate = get_item_db('licenseplate', session_data.licenseplate, 'parking_sessions')
         session = [s for s in get_sessions_for_plate if s['stopped'] == 'None' and s['user'] == session_user['username']]
         pl = get_item_db('id',lot_id,'parking_lots')[0]
