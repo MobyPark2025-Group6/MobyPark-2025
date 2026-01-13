@@ -58,7 +58,7 @@ class ReservationService:
         # Update parkinglots to show reservation
         lot["reserved"] += 1
         parking_lots[reservation_data.lot_id] = lot
-        change_data("parking_lots", parking_lots, )
+        change_data("parking_lots", reservation_data.lot_id, 'id')
 
         # Save the new reservation
         save_reservation.create_reservation(new_reservation)
@@ -79,7 +79,7 @@ class ReservationService:
             )
         
         # Ensure the user is getting their own reservations or is an admin
-        if not ValidationService.check_valid_admin(session_user):
+        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_employee(session_user):
             if user_id != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -161,7 +161,7 @@ class ReservationService:
         reservation = reservations[reservation_index]
 
         # Ensure the user is deleting a reservation for themselves or is an admin
-        if not ValidationService.check_valid_admin(session_user):
+        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_employee(session_user):
             if reservation["user_id"] != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
