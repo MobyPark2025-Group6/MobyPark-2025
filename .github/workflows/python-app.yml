@@ -57,16 +57,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest coverage httpx
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      # - name: Wait for MySQL
-      #   run: |
-      #     for i in {1..30}; do
-      #       if mysqladmin ping -h127.0.0.1 -P3307 -uroot -pstil --silent 2>/dev/null; then
-      #         echo "MySQL is ready!"
-      #         break
-      #       fi
-      #       echo "Waiting for MySQL... ($i/30)"
-      #       sleep 2
-      #     done
+
       - name: Test with pytest
         run: |
           PYTHONPATH=$PYTHONPATH:$(pwd)/api coverage run -m pytest
@@ -86,6 +77,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
+      - name: Test SSH connectivity
+        run: nc -vz your.server.ip 22
       - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
