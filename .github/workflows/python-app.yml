@@ -87,8 +87,6 @@ jobs:
             # Navigate to project directory
             cd ~/Database_MobyPark
             
-            sudo ufw allow ssh
-
             # Update the repository
             git fetch origin
             git reset --hard origin/main
