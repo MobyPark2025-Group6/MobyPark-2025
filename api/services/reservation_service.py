@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from services.validation_service import ValidationService
+from storage_utils import load_data_db_table, get_item_db, save_reservation
 from storage_utils import create_data, delete_data, load_data_db_table, get_item_db, change_data
 from storage_utils import create_data, delete_data, load_data_db_table, get_item_db
 from models.reservation_models import ReservationRegister, ReservationResponse, ReservationOut
@@ -15,7 +16,7 @@ class ReservationService:
         session_user = ValidationService.validate_session_token(token)
 
         # Ensure the user is creating a reservation for themselves or is an admin
-        if not ValidationService.check_valid_admin(session_user):
+        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_admin(session_user) or ValidationService.check_valid_employee(session_user):
             if reservation_data.user_id != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -60,7 +61,8 @@ class ReservationService:
         change_data("parking_lots", parking_lots, )
 
         # Save the new reservation
-        create_data("reservations", new_reservation)
+        save_reservation.create_reservation(new_reservation)
+
 
         return {"status": "Success" ,"reservation": new_reservation}
 
@@ -70,7 +72,7 @@ class ReservationService:
         """Retrieve reservations for a specific user"""
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
-        if session_user["id"] != user_id and not ValidationService.check_valid_admin(session_user):
+        if session_user["id"] != user_id and not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_employee(session_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: Cannot access other user's reservations"
@@ -105,7 +107,7 @@ class ReservationService:
         reservation = reservations[0]
         
         # Ensure the user is getting a reservation for themselves or is an admin
-        if not ValidationService.check_valid_admin(session_user):
+        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_employee(session_user):
             if reservation["user_id"] != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

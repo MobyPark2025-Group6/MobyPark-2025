@@ -27,67 +27,6 @@ def normalize_row(row):
             row[key] = str(value)
     return row
 
-# def load_json(filename):
-#     try:
-#         with open(filename, 'r') as file:
-#             data = json.load(file)
-#             if isinstance(data, list):
-#                 return {str(i+1): v for i, v in enumerate(data)}
-#             return data
-#     except FileNotFoundError:
-#         return {}
-
-# def write_json(filename, data):
-#     with open(filename, 'w') as file:
-#         json.dump(data, file, default=str)
-
-# def load_csv(filename):
-#     try:
-#         with open(filename, 'r') as file:
-#             reader = csv.reader(file)
-#             return [row for row in reader]
-#     except FileNotFoundError:
-#         return []
-
-# def write_csv(filename, data):
-#     with open(filename, 'w', newline='') as file:
-#         writer = csv.writer(file)
-#         for row in data:
-#             writer.writerow(row)
-
-# def load_text(filename):
-#     try:
-#         with open(filename, 'r') as file:
-#             return file.readlines()
-#     except FileNotFoundError:
-#         return []
-
-# def write_text(filename, data):
-#     with open(filename, 'w') as file:
-#         for line in data:
-#             file.write(line + '\n')
-
-# def save_data(filename, data):
-#     if filename.endswith('.json'):
-#         write_json(filename, data)
-#     elif filename.endswith('.csv'):
-#         write_csv(filename, data)
-#     elif filename.endswith('.txt'):
-#         write_text(filename, data)
-#     else:
-#         raise ValueError("Unsupported file format") 
-
-# def load_data(filename):
-#     if filename.endswith('.json'):
-#         return load_json(filename)
-#     elif filename.endswith('.csv'):
-#         return load_csv(filename)
-#     elif filename.endswith('.txt'):
-#         return load_text(filename)
-#     else:
-#         return None
-
-
 def save_record(table: str, data: dict, update_on_duplicate: bool = False) -> int:
     """Insert a row into MySQL and optionally update on duplicate key."""
     if not data:
@@ -141,34 +80,6 @@ def get_item_db(Row, Item, TableName):
     content = [normalize_row(row) for row in rows]
     return content
 
-
-# def save_user_data(data):
-#     save_data('data/users.json', data)
-
-# def load_parking_lot_data():
-#     return load_data('data/parking-lots.json')
-
-# def save_parking_lot_data(data):
-#     save_data('data/parking-lots.json', data)
-
-# def save_reservation_data(data):
-#     save_data('data/reservations.json', data)
-
-# def load_payment_data():
-#     return load_json("data/payments")
-
-# def save_payment_data(data):
-#     save_data('data/payments.json', data)
-
-# def load_discounts_data():
-#     return load_data('data/discounts.csv')
-
-# def save_discounts_data(data):
-#     save_data('data/discounts.csv', data)
-
-# def save_vehicle_data(data):
-#     save_data('data/vehicles.json', data)
-
 def change_data(table,values,condition):
 
     conn = get_db_connection()
@@ -212,13 +123,12 @@ def delete_data(item, Row, table):
                 DELETE FROM {table} 
                 WHERE {Row} = {item};
                 """
-        
-
         cursor.execute(sql)
         conn.commit()
         cursor.close()
         conn.close()
 
+# Pre made implementation of using the create / change / delete for all classes to prevent clutter in other files 
 class save_vehicle:
 
     def create_vehicle(vehicle_data):
@@ -234,17 +144,19 @@ class save_vehicle:
 class save_payment:
     def create_payment(payment_data):
         create_data("payments",payment_data)
+
     def change_payment(payment_data):
-          change_data()
+        change_data("payments", payment_data, "id")
 
     def delete_payment(id):
         delete_data("payments",id)
 
 class save_user:
     def create_user(user_data):
-        pass
+        create_data('users',user_data)
+
     def change_user(user_data):
-        pass
+        change_data("users", user_data, "id")
 
     def delete_user(id):
         delete_data("users",id)
@@ -252,8 +164,9 @@ class save_user:
 class save_parking_lot:
     def create_plt(plt_data):
         create_data("parking_lots",plt_data)
+
     def change_plt(plt_data):
-          change_data()
+        change_data("parking_lots", plt_data, "id")
 
     def delete_plt(id):
         delete_data("parking_lots",id)
@@ -261,9 +174,9 @@ class save_parking_lot:
 class save_discount:
     def create_discount(discount_data):
         create_data("discounts",discount_data)
-        
-    def change_plt(change_discount):
-          change_data()
+   
+    def change_discount(change_discount):
+        change_data("discounts", change_discount, "id")
 
     def delete_discount(id):
         delete_data("discounts",id)
@@ -271,8 +184,32 @@ class save_discount:
 class save_reservation:
     def create_reservation(rsv_data):
         create_data("reservations",rsv_data)
-    def change_reservation(rsv_data):
-        change_data()
 
-    def delete_reservation(rsv_data):
+    def change_reservation(rsv_data):
+        change_data("reservations", rsv_data, "id")
+
+    def delete_reservation(id):
         delete_data("reservations",id)
+
+class save_parking_sessions:
+
+    def create_parking_sessions(parking_session_data):
+        create_data("parking_sessions", parking_session_data)
+  
+    def change_parking_sessions(parking_session_data):
+        change_data("parking_sessions", parking_session_data, "id")
+        
+    def delete_parking_sessions(id):
+        delete_data("parking_sessions",id)
+
+class save_refunds:
+
+    def create_refund(refund_data):
+        create_data("refunds", refund_data)
+  
+    def change_refund(refund_data):
+        change_data("refunds", refund_data, "id")
+        
+    def delete_refund(id):
+        delete_data("refunds",id)
+               

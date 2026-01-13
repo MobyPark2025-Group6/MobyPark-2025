@@ -2,7 +2,7 @@ import datetime
 from fastapi import HTTPException, status
 from typing import Optional
 from datetime import datetime
-from storage_utils import create_data,load_data_db_table,delete_data,get_item_db,change_data
+from storage_utils import get_item_db, save_discount
 from services.validation_service import ValidationService
 import secrets
 import string
@@ -40,8 +40,7 @@ class DiscountService:
                         "expiration_date" :None if exp_date == None else exp_date,
                         "user_id" : None if uid == 0 else uid
                     }
-                    print(discount)
-                    return create_data('discounts',discount)
+                    return save_discount.create_discount(discount)
                  
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -57,9 +56,7 @@ class DiscountService:
     @staticmethod
     def generate_discount_manual(token, discount):
         
-        
-        amount = discount.amount 
-       
+        amount = discount.amount
         loid = discount.lot_id
         disc_str = discount.code
         perc = discount.percentage
@@ -93,8 +90,8 @@ class DiscountService:
                         "user_id" : None if uid == 0 else uid
                         
                     }
-           
-                    create_data('discounts', discount)
+                    save_discount.create_discount(discount)
+                  
                     return discount
             
             raise HTTPException(
@@ -134,8 +131,7 @@ class DiscountService:
                 disc['expiration_date'] = disc['expiration_date'] if exp_date == None else exp_date
                 disc['user_id'] = disc['user_id'] if uid == 0 else uid
 
-                
-                change_data('discounts',disc,'id')
+                save_discount.change_discount(disc)
                 
                 return disc 
             else:
@@ -153,7 +149,7 @@ class DiscountService:
     def delete_discount(token, id):
         session_user = ValidationService.validate_session_token(token)
         if ValidationService.check_valid_admin(session_user):
-            delete_data(id,'id','discounts')
+            save_discount.delete_discount(id)
             return {"Succes"}
         else:
             raise HTTPException(

@@ -135,7 +135,7 @@ class VehicleService:
         user = get_item_db('id',session_user['username'],'users')
 
         if cur_vehicle and cur_vehicle['user_id'] == user['id']:
-            delete_data(id,"vehicles")
+            save_vehicle.delete_vehicle(vid)
 
             updated_vehicles = load_data_db_table("vehicles")
             if all(v.get("id") != cur_vehicle['id'] for v in updated_vehicles) :

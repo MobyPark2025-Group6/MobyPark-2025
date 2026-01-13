@@ -3,6 +3,7 @@ import uuid
 from typing import Optional
 from datetime import datetime
 from fastapi import HTTPException, status
+from storage_utils import create_data, load_data_db_table,delete_data, get_item_db, change_data, save_user
 from storage_utils import create_data, load_data_db_table,delete_data, get_item_db, change_data
 from session_manager import add_session,get_session
 from models.user_models import UserRegister, UserLogin, LoginResponse, MessageResponse
@@ -69,8 +70,8 @@ class UserService:
             'birth_year': user_data.birth_year,
             'active': True
         }
-        
-        create_data("users", new_user)
+        save_user.create_user(new_user)
+
         
         return MessageResponse(message="User created successfully")
     
@@ -85,7 +86,7 @@ class UserService:
 
     def delete_user(user_id: str) -> MessageResponse:
         """Delete a user by ID"""
-        delete_data(id,"users")
+        save_user.delete_user(user_id)
         
         return MessageResponse(message="User deleted successfully")
     
@@ -94,7 +95,8 @@ class UserService:
         """Update user information"""
         users = load_data_db_table("users")
         user_found = False
-        
+        c_user = None 
+
         for user in users:
             if user.get('id') == user_id:
                 user_found = True
@@ -104,6 +106,7 @@ class UserService:
                 user['birth_year'] = user_data.birth_year
                 if user_data.password:
                     user['password'] = UserService.hash_password(user_data.password)
+                c_user = user 
                 break
         
         if not user_found:
@@ -112,7 +115,8 @@ class UserService:
                 detail="User not found"
             )
         
-        change_data('users',user,'id')
+        save_user.change_user(c_user)
+
         return MessageResponse(message="User updated successfully")
     
     @staticmethod
@@ -178,7 +182,7 @@ class UserService:
                 user['email'] = user_data.email
                 user['phone'] = user_data.phone
                 user['birth_year'] = user_data.birth_year
-                change_data('users',user,'id')
+                save_user.change_user(user)
                 return MessageResponse(message="User updated successfully")
         
         raise HTTPException(
@@ -192,8 +196,7 @@ class UserService:
         users = load_data_db_table("users")
         for i, user in enumerate(users):
             if user.get("username") == username:
-                users.pop(i)
-                delete_data(user['id'], 'id', 'users')
+                save_user.delete_user(user['id'])
                 return MessageResponse(message="User deleted successfully")
         
         raise HTTPException(

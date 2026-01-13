@@ -59,6 +59,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest coverage httpx
+          pip install mysql-connector-python>=8.0.33
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
      
@@ -72,23 +73,14 @@ jobs:
             echo "Waiting for MySQL... ($i/30)"
             sleep 2
           done
-      
-
       - name: Test with pytest
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3307
-          DB_USER: root
-          DB_PASSWORD: root
-          DB_NAME: test_db
         run: |
           PYTHONPATH=$PYTHONPATH:$(pwd)/api coverage run -m pytest
-      
       - name: Run code coverage
         run: |
           coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
-          coverage report --fail-under=80
-      
+          coverage report --fail-under=100
+
       - name: Store coverage report
         uses: actions/upload-artifact@v4
         with:
