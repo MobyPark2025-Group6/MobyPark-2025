@@ -136,8 +136,7 @@ api-tests:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: api-test-results
-          path: testResults/
+          path: api-test-results
           
   deploy:
     needs: [build]
