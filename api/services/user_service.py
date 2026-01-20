@@ -121,6 +121,7 @@ class UserService:
     
     @staticmethod
     def authenticate_user(credentials: UserLogin) -> LoginResponse:
+        ph = PasswordHasher()
         """Authenticate user and create session"""
         # Validate credentials
         if not credentials.username or not credentials.password:
@@ -129,15 +130,14 @@ class UserService:
                 detail="Missing credentials"
             )
         
-        # Hash provided password
-        hashed_password = UserService.hash_password(credentials.password)
         
+        md5_hash = hashlib.md5(credentials.password.encode()).hexdigest()
         # Load users and find match
         users = load_data_db_table("users")
-        
+
         for user in users:
             if (user.get("username") == credentials.username and 
-                user.get("password") == hashed_password):
+                ph.verify(user.get("password"), md5_hash)):
                 
                 # Generate session token
                 token = str(uuid.uuid4())
