@@ -1,0 +1,21 @@
+[run]
+source = api
+omit = 
+    api/loaddb.py
+    api/setupdb.py
+    api/rehash.py
+    api/storage_utils.py
+    api/session_calculator.py
+    api/Tests/*
+    api/__pycache__/*
+    api/*/__pycache__/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
