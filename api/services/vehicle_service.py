@@ -105,7 +105,8 @@ class VehicleService:
 
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
-        vehicle = get_item_db("id",vid,"vehicles")
+        vehicle_list = get_item_db("id",vid,"vehicles")
+        vehicle = vehicle_list[0] if vehicle_list else None
         
 
         if vehicle is None or vehicle['user_id'] != session_user['id']:
@@ -131,10 +132,12 @@ class VehicleService:
     def delete_vehicle(token : str , vid : str) :
         session_user = ValidationService.validate_session_token(token)
         VehicleService.checkForVehicle(session_user, vid)
-        cur_vehicle = get_item_db('id',vid,'vehicles')[0]
-        user = get_item_db('id',session_user['username'],'users')
+        cur_vehicle_list = get_item_db('id',vid,'vehicles')
+        cur_vehicle = cur_vehicle_list[0] if cur_vehicle_list else None
+        user_list = get_item_db('id',session_user['id'],'users')
+        user = user_list[0] if user_list else None
 
-        if cur_vehicle and cur_vehicle['user_id'] == user['id']:
+        if cur_vehicle and user and cur_vehicle['user_id'] == user['id']:
             save_vehicle.delete_vehicle(vid)
 
             updated_vehicles = load_data_db_table("vehicles")

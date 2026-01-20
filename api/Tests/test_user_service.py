@@ -29,12 +29,12 @@ def make_hashed_user(username="testuser", password="testpassword", uid="1"):
 # Existence and creation
 # ------------------------
 @patch("services.user_service.load_data_db_table", return_value=[])
-@patch("services.user_service.save_user_data")
+@patch("services.user_service.save_user")
 def test_create_user_success(mock_save, mock_load):
     user = UserRegister(username="newuser", password="pw", name="New User", email="n@example.com")
     res = UserService.create_user(user)
     assert res.message == "User created successfully"
-    mock_save.assert_called_once()
+    mock_save.create_user.assert_called_once()
 
 
 @patch("services.user_service.load_data_db_table", return_value=[make_hashed_user(username="existing")])
@@ -68,8 +68,8 @@ def test_authenticate_user_invalid(mock_load):
 # ------------------------
 # Read / Update / Delete
 # ------------------------
-@patch("services.user_service.load_data_db_table", return_value=[make_hashed_user(username="readme")])
-def test_get_user_by_username(mock_load):
+@patch("services.user_service.get_item_db", return_value=[make_hashed_user(username="readme")])
+def test_get_user_by_username(mock_get_item):
     u = UserService.get_user_by_username("readme")
     assert u is not None
     assert u["username"] == "readme"
@@ -77,13 +77,13 @@ def test_get_user_by_username(mock_load):
 
 
 @patch("services.user_service.load_data_db_table", return_value=[make_hashed_user(username="upduser")])
-@patch("services.user_service.save_user_data")
+@patch("services.user_service.save_user")
 def test_update_user_success(mock_save, mock_load):
     # the update_user in service expects a model with a username attribute
     user_data = User(username="upduser", name="Updated", email="u@example.com")
     res = UserService.update_user(user_data)
     assert res.message == "User updated successfully"
-    mock_save.assert_called_once()
+    mock_save.change_user.assert_called_once()
 
 
 @patch("services.user_service.load_data_db_table", return_value=[])
@@ -94,11 +94,11 @@ def test_update_user_not_found(mock_load):
 
 
 @patch("services.user_service.load_data_db_table", return_value=[make_hashed_user(username="deluser")])
-@patch("services.user_service.save_user_data")
+@patch("services.user_service.save_user")
 def test_delete_user_success(mock_save, mock_load):
     res = UserService.delete_user("deluser")
     assert res.message == "User deleted successfully"
-    mock_save.assert_called_once()
+    mock_save.delete_user.assert_called_once()
 
 
 @patch("services.user_service.load_data_db_table", return_value=[])

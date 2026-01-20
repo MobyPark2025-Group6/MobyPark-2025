@@ -10,17 +10,23 @@ def mock_validation_service(mocker):
     """Fixture to provide mocked ValidationService"""
     return {
         'validate_token': mocker.patch('services.validation_service.ValidationService.validate_session_token'),
-        'check_admin': mocker.patch('services.validation_service.ValidationService.check_valid_admin')
+        'check_admin': mocker.patch('services.validation_service.ValidationService.check_valid_admin'),
+        'check_employee': mocker.patch('services.validation_service.ValidationService.check_valid_employee')
     }
 
 @pytest.fixture
 def mock_storage_functions(mocker):
     """Fixture to provide mocked database functions"""
+    save_reservation = mocker.patch('services.reservation_service.save_reservation')
+    save_parking_lot = mocker.patch('services.reservation_service.save_parking_lot')
     return {
         'load_data': mocker.patch('services.reservation_service.load_data_db_table'),
-        'create_data': mocker.patch('services.reservation_service.create_data'),
-        'change_data': mocker.patch('services.reservation_service.change_data'),
-        'delete_data': mocker.patch('services.reservation_service.delete_data')
+        'get_item': mocker.patch('services.reservation_service.get_item_db'),
+        'save_reservation': save_reservation,
+        'save_parking_lot': save_parking_lot,
+        'create_data': save_reservation.create_reservation,
+        'change_data': save_parking_lot.change_plt,
+        'delete_data': save_reservation.delete_reservation
     }
 
 @pytest.fixture
@@ -108,6 +114,7 @@ class TestCreateReservation:
             "username": "testuser"
         }
         mock_validation_service['check_admin'].return_value = False
+        mock_validation_service['check_employee'].return_value = False
         
         # Execute
         result = ReservationService.create_reservation(sample_reservation_data, token)
@@ -125,14 +132,12 @@ class TestCreateReservation:
         # Verify create_data was called for reservation
         mock_storage_functions['create_data'].assert_called_once()
         create_args = mock_storage_functions['create_data'].call_args[0]
-        assert create_args[0] == "reservations"
-        assert create_args[1]["user_id"] == user_id
+        assert create_args[0]["user_id"] == user_id
         
         # Verify change_data was called for parking lot
         mock_storage_functions['change_data'].assert_called_once()
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[0] == "parking_lots"
-        assert change_args[1]["lot1"]["reserved"] == 1
+        assert change_args[0]["reserved"] == 1  # Was 0, now 1
     
     def test_user_id_is_overwritten_for_non_admin(
         self,
@@ -214,6 +219,7 @@ class TestCreateReservation:
             "username": "admin"
         }
         mock_validation_service['check_admin'].return_value = True
+        mock_validation_service['check_employee'].return_value = False
         
         # Execute
         result = ReservationService.create_reservation(reservation_data, token)
@@ -257,6 +263,7 @@ class TestCreateReservation:
             "username": "testuser"
         }
         mock_validation_service['check_admin'].return_value = False
+        mock_validation_service['check_employee'].return_value = False
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -305,7 +312,7 @@ class TestCreateReservation:
         # Verify create_data was called
         mock_storage_functions['create_data'].assert_called_once()
         create_args = mock_storage_functions['create_data'].call_args[0]
-        assert create_args[1]["id"] == "1"
+        assert create_args[0]["id"] == "1"
     
     def test_invalid_token_raises_exception(
         self,
@@ -442,9 +449,8 @@ class TestCreateReservation:
         
         # Verify create_data was called with correct reservation
         create_args = mock_storage_functions['create_data'].call_args[0]
-        assert create_args[0] == "reservations"
-        assert create_args[1]["id"] == "3"
-        assert create_args[1]["user_id"] == "user123"
+        assert create_args[0]["id"] == "3"
+        assert create_args[0]["user_id"] == "user123"
     
     def test_parking_lot_not_found_raises_404(
         self,
@@ -559,8 +565,7 @@ class TestCreateReservation:
         # Verify parking lot data was updated with incremented count
         mock_storage_functions['change_data'].assert_called_once()
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[0] == "parking_lots"
-        assert change_args[1]["lot1"]["reserved"] == 4  # Was 3, now 4
+        assert change_args[0]["reserved"] == 4  # Was 3, now 4
     
     def test_parking_lot_at_capacity_minus_one_allows_reservation(
         self,
@@ -607,7 +612,7 @@ class TestCreateReservation:
         
         # Verify parking lot is now full
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[1]["lot1"]["reserved"] == 10  # Now full
+        assert change_args[0]["reserved"] == 10  # Now full
 
 class TestGetReservationsList:
     """Tests for ReservationService.get_reservations_list"""
@@ -622,24 +627,25 @@ class TestGetReservationsList:
         token = "valid_token"
         
         reservations = [
-            {"id": "1", "user_id": user_id, "table": "T1"},
-            {"id": "2", "user_id": "other_user", "table": "T2"},
-            {"id": "3", "user_id": user_id, "table": "T3"}
+            {"id": "1", "user_id": user_id, "lot_id": "lot1", "vehicle_id": "v1", "start_time": 1234567800, "end_time": 1234567900},
+            {"id": "2", "user_id": "other_user", "lot_id": "lot1", "vehicle_id": "v2", "start_time": 1234567910, "end_time": 1234567950},
+            {"id": "3", "user_id": user_id, "lot_id": "lot2", "vehicle_id": "v3", "start_time": 1234568000, "end_time": 1234568100}
         ]
         
         # Setup mock returns
         mock_validation_service["validate_token"].return_value = {"id": user_id, "username": "testuser"}
         mock_validation_service["check_admin"].return_value = False
+        mock_validation_service["check_employee"].return_value = False
         mock_storage_functions['load_data'].return_value = reservations
         
         # Execute
         result = ReservationService.get_reservations_list(user_id, token)
         
         # Assertions
-        assert len(result["reservations"]) == 2
-        assert all(res["user_id"] == user_id for res in result["reservations"])
-        assert result["reservations"][0]["id"] == "1"
-        assert result["reservations"][1]["id"] == "3"
+        assert len(result) == 2
+        assert all(res.user_id == user_id for res in result)
+        assert result[0].lot_id == "lot1"
+        assert result[1].lot_id == "lot2"
         
         # Verify method calls
         mock_validation_service["validate_token"].assert_called_once_with(token)
@@ -656,21 +662,22 @@ class TestGetReservationsList:
         token = "admin_token"
         
         reservations = [
-            {"id": "res1", "user_id": target_user_id, "table": "T1"},
-            {"id": "res2", "user_id": "other_user", "table": "T2"}
+            {"id": "res1", "user_id": target_user_id, "lot_id": "lot1", "vehicle_id": "v1", "start_time": 1234567800, "end_time": 1234567900},
+            {"id": "res2", "user_id": "other_user", "lot_id": "lot2", "vehicle_id": "v2", "start_time": 1234567910, "end_time": 1234567950}
         ]
         
         # Setup - admin user
         mock_validation_service["validate_token"].return_value = {"id": admin_id, "username": "admin"}
         mock_validation_service["check_admin"].return_value = True
+        mock_validation_service["check_employee"].return_value = False
         mock_storage_functions['load_data'].return_value = reservations
         
         # Execute
         result = ReservationService.get_reservations_list(target_user_id, token)
         
         # Assertions
-        assert len(result["reservations"]) == 1
-        assert result["reservations"][0]["user_id"] == target_user_id
+        assert len(result) == 1
+        assert result[0].user_id == target_user_id
     
     def test_regular_user_cannot_access_other_users_reservations(
         self, 
@@ -684,6 +691,7 @@ class TestGetReservationsList:
         # Setup - regular user trying to access other user's data
         mock_validation_service["validate_token"].return_value = {"id": user_id, "username": "testuser"}
         mock_validation_service["check_admin"].return_value = False
+        mock_validation_service["check_employee"].return_value = False
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -723,6 +731,7 @@ class TestGetReservationsList:
         # Setup
         mock_validation_service["validate_token"].return_value = {"id": user_id, "username": "testuser"}
         mock_validation_service["check_admin"].return_value = False
+        mock_validation_service["check_employee"].return_value = False
         mock_storage_functions['load_data'].return_value = [
             {"id": "res1", "user_id": "other_user", "table": "T1"}
         ]
@@ -731,7 +740,7 @@ class TestGetReservationsList:
         result = ReservationService.get_reservations_list(user_id, token)
         
         # Assertions
-        assert result["reservations"] == []
+        assert len(result) == 0
     
     def test_token_user_mismatch_first_check(
         self, 
@@ -745,6 +754,7 @@ class TestGetReservationsList:
         # Setup - token belongs to different user, not admin
         mock_validation_service["validate_token"].return_value = {"id": requesting_user_id, "username": "testuser"}
         mock_validation_service["check_admin"].return_value = False
+        mock_validation_service["check_employee"].return_value = False
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -773,20 +783,20 @@ class TestGetReservation:
             "username": "testuser"
         }
         mock_validation_service['check_admin'].return_value = False
-        mock_storage_functions['load_data'].return_value = existing_reservations
+        mock_validation_service['check_employee'].return_value = False
+        mock_storage_functions['get_item'].return_value = [existing_reservations[0]]
         
         # Execute
         result = ReservationService.get_reservation(res_id, token)
         
         # Assertions
-        assert result["reservation"]["id"] == res_id
-        assert result["reservation"]["user_id"] == user_id
-        assert result["reservation"]["lot_id"] == "lot1"
+        assert result["id"] == res_id
+        assert result["user_id"] == user_id
+        assert result["lot_id"] == "lot1"
         
         # Verify mocks were called
         mock_validation_service['validate_token'].assert_called_once_with(token)
         mock_validation_service['check_admin'].assert_called_once()
-        mock_storage_functions['load_data'].assert_called_once_with("reservations")
     
     def test_admin_can_access_any_reservation(
         self,
@@ -805,14 +815,15 @@ class TestGetReservation:
             "username": "admin"
         }
         mock_validation_service['check_admin'].return_value = True
-        mock_storage_functions['load_data'].return_value = existing_reservations
+        mock_validation_service['check_employee'].return_value = False
+        mock_storage_functions['get_item'].return_value = [existing_reservations[0]]
         
         # Execute
         result = ReservationService.get_reservation(res_id, token)
         
         # Assertions
-        assert result["reservation"]["id"] == res_id
-        assert result["reservation"]["user_id"] == "user456"
+        assert result["id"] == res_id
+        assert result["user_id"] == "user456"
         
         # Admin check should return True, so no further validation needed
         mock_validation_service['check_admin'].assert_called_once()
@@ -820,7 +831,7 @@ class TestGetReservation:
     def test_user_cannot_access_other_users_reservation(
         self,
         mock_validation_service,
-        mock_load_reservation_data,
+        mock_storage_functions,
         existing_reservations
     ):
         """Test that a regular user cannot access another user's reservation"""
@@ -834,7 +845,8 @@ class TestGetReservation:
             "username": "testuser"
         }
         mock_validation_service['check_admin'].return_value = False
-        mock_storage_functions['load_data'].return_value = existing_reservations
+        mock_validation_service['check_employee'].return_value = False
+        mock_storage_functions['get_item'].return_value = [existing_reservations[0]]
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -858,7 +870,9 @@ class TestGetReservation:
             "id": "user123",
             "username": "testuser"
         }
-        mock_storage_functions['load_data'].return_value = existing_reservations
+        mock_validation_service['check_admin'].return_value = False
+        mock_validation_service['check_employee'].return_value = False
+        mock_storage_functions['get_item'].return_value = []
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -903,7 +917,9 @@ class TestGetReservation:
             "id": "user123",
             "username": "testuser"
         }
-        mock_storage_functions['load_data'].return_value = []
+        mock_validation_service['check_admin'].return_value = False
+        mock_validation_service['check_employee'].return_value = False
+        mock_storage_functions['get_item'].return_value = []
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -954,13 +970,12 @@ class TestDeleteReservation:
         assert result["message"] == "Reservation deleted"
         
         # Verify delete_data was called
-        mock_storage_functions['delete_data'].assert_called_once_with(res_id, "reservation_id", "reservations")
+        mock_storage_functions['delete_data'].assert_called_once_with(res_id)
         
         # Verify parking lot reserved count was decremented
         mock_storage_functions['change_data'].assert_called_once()
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[0] == "parking_lots"
-        assert change_args[1]["lot1"]["reserved"] == 4  # Was 5, now 4
+        assert change_args[0]["reserved"] == 4  # Was 5, now 4
 
     def test_admin_deletes_any_reservation(
         self,
@@ -1029,6 +1044,7 @@ class TestDeleteReservation:
             "username": "otheruser"
         }
         mock_validation_service['check_admin'].return_value = False
+        mock_validation_service['check_employee'].return_value = False
         
         # Execute & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -1126,7 +1142,7 @@ class TestDeleteReservation:
         
         # Verify parking lot reserved count decremented
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[1]["lot1"]["reserved"] == 6  # Was 7, now 6
+        assert change_args[0]["reserved"] == 6  # Was 7, now 6
 
     def test_parking_lot_not_found_still_deletes_reservation(
         self,
@@ -1255,7 +1271,7 @@ class TestDeleteReservation:
         
         # Verify parking lot reserved count is now 0
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[1]["lot1"]["reserved"] == 0
+        assert change_args[0]["reserved"] == 0
 
     def test_correct_reservation_removed_from_multiple(
         self,
@@ -1325,9 +1341,8 @@ class TestDeleteReservation:
         result = ReservationService.delete_reservation(res_id, token)
         
         # Verify correct reservation was deleted
-        mock_storage_functions['delete_data'].assert_called_once_with("2", "reservation_id", "reservations")
+        mock_storage_functions['delete_data'].assert_called_once_with("2")
         
         # Verify correct parking lot was updated
         change_args = mock_storage_functions['change_data'].call_args[0]
-        assert change_args[1]["lot1"]["reserved"] == 1  # Was 2, now 1
-        assert change_args[1]["lot2"]["reserved"] == 1  # Unchanged
+        assert change_args[0]["reserved"] == 1

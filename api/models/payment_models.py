@@ -2,37 +2,29 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
 class PaymentBase(BaseModel):
-    id : int
     transaction: str
     amount: float
     initiator: Optional[str] = None
     created_at: str
     completed: Optional[str] = None
-    date : str 
-    method : str 
-    issuer : str 
-    bank : str 
-    hash : str 
-    session_id : int 
-    parking_lot_id : int 
+    hash: str
 
 
 class PaymentCreate(BaseModel):
     """Used for creating new payments"""
-    parking_lot_id : int 
-    license_plate : str 
-    session_id : str 
+    amount: float
 
-class PaymentRefund(PaymentBase):
+
+class PaymentRefund(BaseModel):
     """Used for refunding payments"""
-    pass
+    amount: float
+    coupled_to: str
+
 
 class PaymentUpdate(BaseModel):
     """Used for completing transactions"""
-    disc_code : str 
-    method : str 
-    issuer : str 
-    bank : str 
+    t_data: Dict[str, Any]
+    validation: str
 
 class PaymentOut(BaseModel):
     transaction: str

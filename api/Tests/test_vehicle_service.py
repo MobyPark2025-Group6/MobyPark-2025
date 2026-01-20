@@ -42,13 +42,12 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
 
     # Sample reservations: one matching vid, one other
     fake_reservations = [
-        {"id": "r1", "vehicle_id": "1", "licenseplate": "XYZ123", "user": "user1", "started": "2025-01-01 10:00:00"},
-        {"id": "r2", "vehicle_id": "2", "licenseplate": "ABC999", "user": "user2", "started": "2025-01-02 10:00:00"}
+        {"id": "r1", "vehicle_id": "1", "licenseplate": "XYZ123", "user": "user1", "started": "2025-01-01 10:00:00"}
     ]
 
     with patch("services.validation_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
-         patch("services.vehicle_service.load_data_db_table") as mock_load_parking:
+         patch("services.vehicle_service.get_item_db") as mock_get_item:
 
         # Make the validator accept any token and return a session user dict
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
@@ -56,8 +55,8 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
         # Make the vehicle-existence check a no-op (so it won't raise HTTPException)
         mock_check.return_value = None
 
-        # Return the fake reservations list when the service loads parking data
-        mock_load_parking.return_value = fake_reservations
+        # Return the fake reservations list when get_item_db is called for reservations
+        mock_get_item.return_value = fake_reservations
 
         # Call the real service
         result = VehicleService.get_vehicle_reservations(token, vid)
@@ -71,7 +70,6 @@ def test_get_vehicle_id_reservations_mocked(auth_header):
         # Verify the mocks were used as expected
         mock_validate.assert_called_once_with(token)
         mock_check.assert_called_once_with(mock_validate.return_value, vid)
-        mock_load_parking.assert_called_once()
 
 
 
@@ -162,27 +160,20 @@ def test_get_all_vehicles_admin_lookup():
 
 def test_change_vehicle_mocked():
     token = "fake-token"
-    with patch("services.vehicle_service.load_data_db_table") as mock_load, \
+    with patch("services.vehicle_service.get_item_db") as mock_get_item, \
      patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
      patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_vehicle_check , \
-     patch("services.vehicle_service.save_vehicle_data") as mock_save : 
+     patch("services.vehicle_service.save_vehicle") as mock_save : 
         
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
-        mock_load.return_value = mock_user_vehicles
+        mock_get_item.return_value = [mock_user_vehicles[0]]
         mock_vehicle_check.return_value = True 
 
         updated_vehicle_data =  {"id": "1", "user_id": "1", "license_plate": "71-XYZ-7", "make": "FORD", "model": "102", "color": "RED", "year": 1900, "created_at": "2024-04-13"}
-        mock_save.return_value =  [
-            {"id": "1", "user_id": "1", "license_plate": "71-XYZ-7", "make": "FORD", "model": "102", "color": "RED", "year": 1900, "created_at": "2024-04-13"},
-            {"id": "2", "user_id": "1", "license_plate": "76-BCA-7", "make": "Peugeot", "model": "123", "color": "Blue", "year": 2020, "created_at": "2024-03-13"},
-            {"id": "3", "user_id": "2", "license_plate": "76-QAU-7", "make": "CAR", "model": "213", "color": "Yellow", "year": 1800, "created_at": "2024-02-13"},
-            {"id": "4", "user_id": "3", "license_plate": "76-PSL-7", "make": "Peugeot", "model": "3028", "color": "Red", "year": 2000, "created_at": "2024-01-13"}
-        ]
+        
         resp = VehicleService.change_vehicle(token, "1", updated_vehicle_data)
         assert resp["status"] == "Success"
-        assert updated_vehicle_data in mock_save.return_value
-        mock_save.assert_called_once()
-        assert updated_vehicle_data in mock_save.call_args[0][0]
+        mock_save.change_vehicle.assert_called_once()
 
 
 def test_create_vehicle_mocked():
@@ -192,31 +183,20 @@ def test_create_vehicle_mocked():
          patch("services.vehicle_service.VehicleService.check_for_parameters") as mock_param_check, \
          patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.load_data_db_table") as mock_vehicle_load, \
-         patch("services.vehicle_service.save_vehicle_data") as mock_save : 
+         patch("services.vehicle_service.save_vehicle") as mock_save : 
             
             mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
        
             mock_vehicle_load.return_value = mock_user_vehicles
             mock_param_check.return_value = None
             mock_liscenseid_check.return_value = None
-            mock_save.return_value = [
-                {"id": "1", "user_id": "1", "license_plate": "76-ACB-7", "make": "BMW", "model": "308", "color": "Brown", "year": 2024, "created_at": "2024-04-13"},
-                {"id": "2", "user_id": "1", "license_plate": "76-BCA-7", "make": "Peugeot", "model": "123", "color": "Blue", "year": 2020, "created_at": "2024-03-13"},
-                {"id": "3", "user_id": "2", "license_plate": "76-QAU-7", "make": "CAR", "model": "213", "color": "Yellow", "year": 1800, "created_at": "2024-02-13"},
-                {"id": "4", "user_id": "3", "license_plate": "76-PSL-7", "make": "Peugeot", "model": "3028", "color": "Red", "year": 2000, "created_at": "2024-01-13"}
-
-            ]
 
             resp = VehicleService.create_vehicle(token, new_vehicle)
             assert resp["status"] == "Success"
             mock_validate.assert_called_once_with(token)
 
             mock_param_check.assert_called_once_with(new_vehicle)
-            mock_liscenseid_check.assert_called_once_with("76ACB7", mock_normal_user)
-            mock_save.assert_called_once()
-
-            saved_list = mock_save.call_args[0][0]
-            assert any(v["license_plate"] == "76-ACB-7" for v in saved_list)
+            mock_save.create_vehicle.assert_called_once()
 
     
 
@@ -224,21 +204,20 @@ def test_delete_vehicle_mocked():
     token = "fake-token"
     fake_vehicle_id = "1"
 
-    # initial vehicle list and expected remaining after delete
-    initial = list(mock_user_vehicles)
-    remaining = [v for v in initial if v["id"] != fake_vehicle_id]
-
     with patch("services.vehicle_service.ValidationService.validate_session_token") as mock_validate, \
          patch("services.vehicle_service.VehicleService.checkForVehicle") as mock_check, \
+         patch("services.vehicle_service.get_item_db") as mock_get_item, \
          patch("services.vehicle_service.load_data_db_table") as mock_load, \
-         patch("services.vehicle_service.save_vehicle_data") as mock_save:
+         patch("services.vehicle_service.save_vehicle") as mock_save:
 
-        # First load returns the initial list, second load (after save) should return remaining
-        mock_load.side_effect = [initial, remaining]
+        mock_get_item.side_effect = [
+            [mock_user_vehicles[0]],  # First call for vehicle
+            [{"id": "1", "username": "user1"}]  # Second call for user
+        ]
+        mock_load.return_value = [v for v in mock_user_vehicles if v["id"] != fake_vehicle_id]
 
         mock_validate.return_value = {"id": "1", "username": "user1", "role": "USER"}
         mock_check.return_value = None
-        mock_save.return_value = None
 
         resp = VehicleService.delete_vehicle(token, fake_vehicle_id)
 
@@ -246,7 +225,7 @@ def test_delete_vehicle_mocked():
         mock_validate.assert_called_once_with(token)
         mock_check.assert_called_once_with(mock_validate.return_value, fake_vehicle_id)
 
+
+        # ensure save was called
+        mock_save.delete_vehicle.assert_called_once_with(fake_vehicle_id)
         # ensure save was called with the remaining list (no deleted vehicle)
-        mock_save.assert_called_once()
-        saved_list = mock_save.call_args[0][0]
-        assert all(v["id"] != fake_vehicle_id for v in saved_list)

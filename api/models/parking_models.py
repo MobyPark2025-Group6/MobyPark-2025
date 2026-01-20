@@ -3,17 +3,17 @@ from typing import Optional
 from datetime import datetime
 
 class ParkingLotBase(BaseModel):
-    id: int
+    id: Optional[str] = None
     name: str
     location: str
     capacity: int
-    adress : str 
-    reserved : int
-    tariff : float 
-    day_tariff: float
-    created_at : datetime
-    lat : float
-    lng : float
+    adress: Optional[str] = None
+    reserved: int = 0
+    tariff: float = 0.0
+    day_tariff: float = 0.0
+    created_at: Optional[datetime] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
 
 
 class SessionStart(BaseModel):

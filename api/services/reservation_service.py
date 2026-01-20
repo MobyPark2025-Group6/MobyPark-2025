@@ -13,15 +13,19 @@ class ReservationService:
         # Validate session token
         session_user = ValidationService.validate_session_token(token)
 
-        # Ensure the user is creating a reservation for themselves or is an admin
-        if not ValidationService.check_valid_admin(session_user) and not ValidationService.check_valid_admin(session_user) or ValidationService.check_valid_employee(session_user):
+        # Ensure the user is creating a reservation for themselves or is an admin/employee
+        is_admin = ValidationService.check_valid_admin(session_user)
+        is_employee = ValidationService.check_valid_employee(session_user)
+        
+        if not is_admin and not is_employee:
+            # Regular users can only create reservations for themselves
             if reservation_data.user_id != session_user["id"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied"
                 )
-            else:
-                reservation_data.user_id = session_user["id"]
+            # Override user_id to ensure it matches session user
+            reservation_data.user_id = session_user["id"]
 
         parking_lots = load_data_db_table("parking_lots")
 
