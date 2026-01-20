@@ -70,36 +70,4 @@ jobs:
         with:
           path: coverage.xml
         if: ${{ failure() }}
-  deploy:
-    needs: [build]
-    runs-on: ubuntu-latest
-    # Only deploy on push to main (not on PRs or Develop branch)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          timeout: 600s
-          script: |
-            # Navigate to project directory
-            cd ~/Database_MobyPark
-            
-            # Update the repository
-            git fetch origin
-            git reset --hard origin/main
-            
-            # Activate virtual environment and update dependencies
-            source venv/bin/activate
-            pip install -r requirements.txt
-            
-            # Restart the service
-            sudo systemctl restart mobypark
-            
-            # Wait and check status
-            sleep 3
-            sudo systemctl status mobypark --no-pager
-            
-            echo "Application deployed and restarted successfully!"
+  
