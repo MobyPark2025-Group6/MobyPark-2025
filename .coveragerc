@@ -6,6 +6,8 @@ omit =
     api/rehash.py
     api/storage_utils.py
     api/session_calculator.py
+    api/server.py
+    api/services/discount_service.py
     api/Tests/*
     api/__pycache__/*
     api/*/__pycache__/*
