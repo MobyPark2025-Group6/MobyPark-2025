@@ -519,9 +519,7 @@ async def create_discount(
     """
 
     Admin only 
-
     Generates a discount and places it in the db. 
-
     If the code part of the discount is empty, the system will generate one on its own 
     
     """
@@ -541,9 +539,7 @@ async def edit_discount(
     """
 
     Admin only 
-
     Edit a discount based on it's id 
-
     Leave the values empty that are not to be changed 
     
     """
@@ -558,7 +554,6 @@ async def remove_discount(
     """
 
     Admin only 
-
     Delete a discount based on its ID 
     
     """
