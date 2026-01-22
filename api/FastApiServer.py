@@ -499,7 +499,6 @@ async def list_reservations(
         token: Optional[str] = Depends(get_token)
     ):
     """Get reservation details by reservation ID
-
     Requires Bearer token in Authorization header.
     """
     return ReservationService.get_reservations_list(user_id, token)
